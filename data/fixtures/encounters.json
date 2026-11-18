@@ -1,0 +1,60 @@
+{
+  "catalogSnapshotId": "synthetic-catalog-v1",
+  "datasetType": "synthetic",
+  "featuredEncounterId": "enc-peregrine-lyra",
+  "sourceEpochUtc": "2026-03-20T12:00:00Z",
+  "source": {
+    "sourceName": "Perigee deterministic synthetic fixture",
+    "sourceUrl": null,
+    "retrievedAtUtc": "2026-11-17T21:25:22Z",
+    "datasetType": "synthetic",
+    "snapshotId": "synthetic-catalog-v1",
+    "license": "Generated for this repository",
+    "caveat": "Synthetic encounter values; not derived from real conjunction data and not suitable for operations."
+  },
+  "generatedSeed": "PERIGEE-M0-M1-20260320",
+  "encounters": [
+    {
+      "encounterId": "enc-peregrine-lyra",
+      "objectAId": "sat-peregrine-a",
+      "objectBId": "sat-lyra-b",
+      "catalogSnapshotId": "synthetic-catalog-v1",
+      "runId": "run-fixture-m0",
+      "tcaUtc": "2026-03-20T14:32:10Z",
+      "minimumSeparationMeters": 742,
+      "relativeSpeedMps": 7350,
+      "sourceEpochUtc": "2026-03-20T12:00:00Z",
+      "datasetType": "synthetic",
+      "dataQuality": "synthetic_fixture",
+      "featured": true
+    },
+    {
+      "encounterId": "enc-celeste-atlas",
+      "objectAId": "sat-celeste-c",
+      "objectBId": "sat-atlas-d",
+      "catalogSnapshotId": "synthetic-catalog-v1",
+      "runId": "run-fixture-m0",
+      "tcaUtc": "2026-03-20T16:08:45Z",
+      "minimumSeparationMeters": 1285,
+      "relativeSpeedMps": 6810,
+      "sourceEpochUtc": "2026-03-20T12:00:00Z",
+      "datasetType": "synthetic",
+      "dataQuality": "synthetic_fixture",
+      "featured": false
+    },
+    {
+      "encounterId": "enc-peregrine-celeste",
+      "objectAId": "sat-peregrine-a",
+      "objectBId": "sat-celeste-c",
+      "catalogSnapshotId": "synthetic-catalog-v1",
+      "runId": "run-fixture-m0",
+      "tcaUtc": "2026-03-20T18:41:30Z",
+      "minimumSeparationMeters": 2310,
+      "relativeSpeedMps": 7045,
+      "sourceEpochUtc": "2026-03-20T12:00:00Z",
+      "datasetType": "synthetic",
+      "dataQuality": "synthetic_fixture",
+      "featured": false
+    }
+  ]
+}

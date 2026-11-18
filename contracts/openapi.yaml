@@ -1,0 +1,831 @@
+openapi: 3.1.0
+info:
+  title: Perigee API
+  version: 0.1.0
+  description: |
+    Typed JSON API for the local-first Perigee orbital conjunction demonstrator.
+    M0/M1 fixture data are synthetic and educational; they are not operational
+    ephemerides or collision predictions.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: Read service health
+      responses:
+        "200":
+          description: Service is available.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/catalog:
+    get:
+      operationId: listCatalogObjects
+      summary: Search catalog objects
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+            default: ""
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deterministically sorted catalog page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogPage"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/catalog/{id}:
+    get:
+      operationId: getCatalogObject
+      summary: Read one catalog object
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Catalog object metadata.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CatalogObject"
+        "404":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/demo/featured:
+    get:
+      operationId: getFeaturedEncounter
+      summary: Read the pinned featured encounter
+      responses:
+        "200":
+          description: Featured encounter and fixture provenance.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeaturedEncounter"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/screenings:
+    post:
+      operationId: createScreening
+      summary: Start an asynchronous screening run
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateScreeningRequest"
+      responses:
+        "202":
+          description: Screening accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateScreeningResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/screenings/{runId}:
+    get:
+      operationId: getScreening
+      summary: Read screening status
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Screening status and progress.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreeningStatus"
+        "404":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/screenings/{runId}/encounters:
+    get:
+      operationId: listScreeningEncounters
+      summary: List encounters found by a screening run
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Deterministically sorted encounter page.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EncounterPage"
+        "404":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/encounters/{encounterId}:
+    get:
+      operationId: getEncounter
+      summary: Read encounter details
+      parameters:
+        - name: encounterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Encounter metrics and object summaries.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EncounterDetails"
+        "404":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/encounters/{encounterId}/trajectory:
+    get:
+      operationId: getEncounterTrajectory
+      summary: Read synchronized encounter trajectory samples
+      parameters:
+        - name: encounterId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: startUtc
+          in: query
+          schema:
+            $ref: "#/components/schemas/Rfc3339Utc"
+        - name: endUtc
+          in: query
+          schema:
+            $ref: "#/components/schemas/Rfc3339Utc"
+        - name: samples
+          in: query
+          description: Requested number of identical-timestamp samples (maximum 241).
+          schema:
+            type: integer
+            minimum: 2
+            maximum: 241
+            default: 61
+      responses:
+        "200":
+          description: Synchronized trajectory samples and separation series.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Trajectory"
+        "404":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/encounters/{encounterId}/maneuvers:
+    post:
+      operationId: createManeuver
+      summary: Recompute one educational along-track maneuver scenario
+      parameters:
+        - name: encounterId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManeuverRequest"
+      responses:
+        "200":
+          description: Original and simulated metrics and trajectories.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManeuverResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
+components:
+  responses:
+    Error:
+      description: Structured error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  schemas:
+    Rfc3339Utc:
+      type: string
+      format: date-time
+      pattern: "^.+Z$"
+      description: RFC3339 timestamp in UTC, with the Z suffix.
+      examples:
+        - "2026-03-20T12:00:00Z"
+
+    DatasetType:
+      type: string
+      enum:
+        - synthetic
+        - public_snapshot
+
+    SourceMetadata:
+      type: object
+      additionalProperties: false
+      required:
+        - sourceName
+        - retrievedAtUtc
+        - datasetType
+        - snapshotId
+      properties:
+        sourceName:
+          type: string
+        sourceUrl:
+          type:
+            - string
+            - "null"
+          format: uri
+        retrievedAtUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        datasetType:
+          $ref: "#/components/schemas/DatasetType"
+        snapshotId:
+          type: string
+          description: Stable, versioned fixture or snapshot identifier.
+        license:
+          type:
+            - string
+            - "null"
+        caveat:
+          type: string
+
+    Health:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - service
+        - version
+        - timestampUtc
+        - fixtureMode
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - degraded
+        service:
+          type: string
+          const: perigee-api
+        version:
+          type: string
+        timestampUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        fixtureMode:
+          type: boolean
+
+    CatalogObject:
+      type: object
+      additionalProperties: false
+      required:
+        - catalogId
+        - name
+        - catalogSnapshotId
+        - sourceEpochUtc
+        - datasetType
+        - orbitRegime
+        - dataQuality
+        - source
+      properties:
+        catalogId:
+          type: string
+        name:
+          type: string
+        catalogSnapshotId:
+          type: string
+        noradId:
+          type:
+            - integer
+            - "null"
+          description: Public catalog identifier; null for wholly synthetic objects.
+        sourceEpochUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        datasetType:
+          $ref: "#/components/schemas/DatasetType"
+        orbitRegime:
+          type: string
+          enum:
+            - leo
+            - meo
+            - geo
+            - other
+        meanAltitudeKm:
+          type: number
+          minimum: 0
+          description: Canonical mean altitude in kilometers.
+        dataQuality:
+          type: string
+          enum:
+            - synthetic_fixture
+            - public_snapshot
+            - stale
+        elementModel:
+          type: string
+          description: Propagation model or fixture state model used for the object.
+        source:
+          $ref: "#/components/schemas/SourceMetadata"
+
+    CatalogPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CatalogObject"
+        nextCursor:
+          type:
+            - string
+            - "null"
+
+    EncounterSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - encounterId
+        - objectAId
+        - objectBId
+        - catalogSnapshotId
+        - runId
+        - tcaUtc
+        - minimumSeparationMeters
+        - relativeSpeedMps
+        - sourceEpochUtc
+        - datasetType
+        - dataQuality
+        - featured
+      properties:
+        encounterId:
+          type: string
+        objectAId:
+          type: string
+        objectBId:
+          type: string
+        catalogSnapshotId:
+          type: string
+        runId:
+          type:
+            - string
+            - "null"
+        tcaUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        minimumSeparationMeters:
+          type: number
+          minimum: 0
+        relativeSpeedMps:
+          type: number
+          minimum: 0
+        sourceEpochUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        datasetType:
+          $ref: "#/components/schemas/DatasetType"
+        dataQuality:
+          type: string
+        featured:
+          type: boolean
+
+    EncounterDetails:
+      type: object
+      additionalProperties: false
+      required:
+        - encounterId
+        - objectAId
+        - objectBId
+        - catalogSnapshotId
+        - runId
+        - tcaUtc
+        - minimumSeparationMeters
+        - relativeSpeedMps
+        - sourceEpochUtc
+        - datasetType
+        - dataQuality
+        - featured
+        - objectA
+        - objectB
+        - source
+        - caveats
+      properties:
+        encounterId:
+          type: string
+        objectAId:
+          type: string
+        objectBId:
+          type: string
+        catalogSnapshotId:
+          type: string
+        runId:
+          type:
+            - string
+            - "null"
+        tcaUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        minimumSeparationMeters:
+          type: number
+          minimum: 0
+        relativeSpeedMps:
+          type: number
+          minimum: 0
+        sourceEpochUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        datasetType:
+          $ref: "#/components/schemas/DatasetType"
+        dataQuality:
+          type: string
+        featured:
+          type: boolean
+        objectA:
+          $ref: "#/components/schemas/CatalogObject"
+        objectB:
+          $ref: "#/components/schemas/CatalogObject"
+        source:
+          $ref: "#/components/schemas/SourceMetadata"
+        caveats:
+          type: array
+          items:
+            type: string
+
+    EncounterPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - nextCursor
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/EncounterSummary"
+        nextCursor:
+          type:
+            - string
+            - "null"
+
+    FeaturedEncounter:
+      type: object
+      additionalProperties: false
+      required:
+        - featuredEncounterId
+        - encounterIds
+        - snapshot
+        - encounter
+      properties:
+        featuredEncounterId:
+          type: string
+        encounterIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+        snapshot:
+          $ref: "#/components/schemas/SourceMetadata"
+        encounter:
+          $ref: "#/components/schemas/EncounterSummary"
+
+    CreateScreeningRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - catalogSnapshotId
+        - startTimeUtc
+        - endTimeUtc
+        - thresholdMeters
+        - coarseStepSeconds
+      properties:
+        catalogSnapshotId:
+          type: string
+        startTimeUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        endTimeUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        thresholdMeters:
+          type: number
+          exclusiveMinimum: 0
+        coarseStepSeconds:
+          type: integer
+          minimum: 1
+          maximum: 3600
+
+    CreateScreeningResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - runId
+        - status
+      properties:
+        runId:
+          type: string
+        status:
+          type: string
+          enum:
+            - queued
+
+    ScreeningStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - runId
+        - status
+        - phase
+        - progressPercent
+        - createdAtUtc
+        - updatedAtUtc
+      properties:
+        runId:
+          type: string
+        status:
+          type: string
+          enum:
+            - queued
+            - running
+            - completed
+            - failed
+            - cancelled
+        phase:
+          type: string
+          enum:
+            - queued
+            - loading_catalog
+            - propagating
+            - broad_phase
+            - refinement
+            - complete
+            - failed
+        progressPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+        createdAtUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        updatedAtUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        startedAtUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        completedAtUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        error:
+          $ref: "#/components/schemas/Error"
+
+    FrameMetadata:
+      type: object
+      additionalProperties: false
+      required:
+        - frame
+        - positionUnit
+        - velocityUnit
+        - distanceUnit
+        - frameCaveat
+      properties:
+        frame:
+          type: string
+          enum:
+            - TEME
+            - ECI
+            - ECEF
+        positionUnit:
+          type: string
+          const: km
+        velocityUnit:
+          type: string
+          const: m/s
+        distanceUnit:
+          type: string
+          const: m
+        frameCaveat:
+          type: string
+
+    ObjectState:
+      type: object
+      additionalProperties: false
+      required:
+        - positionXKm
+        - positionYKm
+        - positionZKm
+        - velocityXMps
+        - velocityYMps
+        - velocityZMps
+      properties:
+        positionXKm:
+          type: number
+        positionYKm:
+          type: number
+        positionZKm:
+          type: number
+        velocityXMps:
+          type: number
+        velocityYMps:
+          type: number
+        velocityZMps:
+          type: number
+
+    TrajectorySample:
+      type: object
+      additionalProperties: false
+      required:
+        - atUtc
+        - objectA
+        - objectB
+        - separationMeters
+      properties:
+        atUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        objectA:
+          $ref: "#/components/schemas/ObjectState"
+        objectB:
+          $ref: "#/components/schemas/ObjectState"
+        separationMeters:
+          type: number
+          minimum: 0
+
+    Trajectory:
+      type: object
+      additionalProperties: false
+      required:
+        - encounterId
+        - frame
+        - tcaUtc
+        - startUtc
+        - endUtc
+        - samples
+        - source
+      properties:
+        encounterId:
+          type: string
+        frame:
+          $ref: "#/components/schemas/FrameMetadata"
+        tcaUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        startUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        endUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        samples:
+          type: array
+          minItems: 2
+          maxItems: 241
+          items:
+            $ref: "#/components/schemas/TrajectorySample"
+        source:
+          $ref: "#/components/schemas/SourceMetadata"
+
+    ManeuverRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - maneuverTimeUtc
+        - alongTrackDeltaVMps
+      properties:
+        maneuverTimeUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        alongTrackDeltaVMps:
+          type: number
+          minimum: -0.5
+          maximum: 0.5
+          description: Instantaneous along-track velocity change in m/s.
+
+    ManeuverMetrics:
+      type: object
+      additionalProperties: false
+      required:
+        - tcaUtc
+        - minimumSeparationMeters
+        - relativeSpeedMps
+      properties:
+        tcaUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        minimumSeparationMeters:
+          type: number
+          minimum: 0
+        relativeSpeedMps:
+          type: number
+          minimum: 0
+
+    ManeuverResult:
+      type: object
+      additionalProperties: false
+      required:
+        - scenarioId
+        - encounterId
+        - maneuverTimeUtc
+        - alongTrackDeltaVMps
+        - originalMetrics
+        - simulatedMetrics
+        - missDistanceDeltaMeters
+        - originalTrajectory
+        - simulatedTrajectory
+        - limitations
+        - datasetType
+      properties:
+        scenarioId:
+          type: string
+        encounterId:
+          type: string
+        maneuverTimeUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        alongTrackDeltaVMps:
+          type: number
+        originalMetrics:
+          $ref: "#/components/schemas/ManeuverMetrics"
+        simulatedMetrics:
+          $ref: "#/components/schemas/ManeuverMetrics"
+        missDistanceDeltaMeters:
+          type: number
+          description: Simulated minimum separation minus original minimum separation.
+        originalTrajectory:
+          $ref: "#/components/schemas/Trajectory"
+        simulatedTrajectory:
+          $ref: "#/components/schemas/Trajectory"
+        limitations:
+          type: array
+          minItems: 1
+          items:
+            type: string
+        datasetType:
+          $ref: "#/components/schemas/DatasetType"
+
+    Error:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+        - details
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true

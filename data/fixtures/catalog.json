@@ -1,0 +1,101 @@
+{
+  "catalogSnapshotId": "synthetic-catalog-v1",
+  "datasetType": "synthetic",
+  "snapshot": {
+    "sourceName": "Perigee deterministic synthetic fixture",
+    "sourceUrl": null,
+    "retrievedAtUtc": "2026-11-17T21:25:22Z",
+    "datasetType": "synthetic",
+    "snapshotId": "synthetic-catalog-v1",
+    "license": "Generated for this repository; synthetic values have no third-party license",
+    "caveat": "Fictional objects and states created only for reproducible local demonstration."
+  },
+  "generatedSeed": "PERIGEE-M0-M1-20260320",
+  "sourceEpochUtc": "2026-03-20T12:00:00Z",
+  "objects": [
+    {
+      "catalogId": "sat-peregrine-a",
+      "name": "Peregrine A",
+      "catalogSnapshotId": "synthetic-catalog-v1",
+      "noradId": null,
+      "sourceEpochUtc": "2026-03-20T12:00:00Z",
+      "datasetType": "synthetic",
+      "orbitRegime": "leo",
+      "meanAltitudeKm": 550,
+      "dataQuality": "synthetic_fixture",
+      "elementModel": "fixture_circular_propagator",
+      "source": {
+        "sourceName": "Perigee deterministic synthetic fixture",
+        "sourceUrl": null,
+        "retrievedAtUtc": "2026-11-17T21:25:22Z",
+        "datasetType": "synthetic",
+        "snapshotId": "synthetic-catalog-v1",
+        "license": "Generated for this repository",
+        "caveat": "Fictional object; not associated with an operational spacecraft."
+      }
+    },
+    {
+      "catalogId": "sat-lyra-b",
+      "name": "Lyra B",
+      "catalogSnapshotId": "synthetic-catalog-v1",
+      "noradId": null,
+      "sourceEpochUtc": "2026-03-20T12:00:00Z",
+      "datasetType": "synthetic",
+      "orbitRegime": "leo",
+      "meanAltitudeKm": 550,
+      "dataQuality": "synthetic_fixture",
+      "elementModel": "fixture_circular_propagator",
+      "source": {
+        "sourceName": "Perigee deterministic synthetic fixture",
+        "sourceUrl": null,
+        "retrievedAtUtc": "2026-11-17T21:25:22Z",
+        "datasetType": "synthetic",
+        "snapshotId": "synthetic-catalog-v1",
+        "license": "Generated for this repository",
+        "caveat": "Fictional object; not associated with an operational spacecraft."
+      }
+    },
+    {
+      "catalogId": "sat-celeste-c",
+      "name": "Celeste C",
+      "catalogSnapshotId": "synthetic-catalog-v1",
+      "noradId": null,
+      "sourceEpochUtc": "2026-03-20T12:00:00Z",
+      "datasetType": "synthetic",
+      "orbitRegime": "leo",
+      "meanAltitudeKm": 650,
+      "dataQuality": "synthetic_fixture",
+      "elementModel": "fixture_circular_propagator",
+      "source": {
+        "sourceName": "Perigee deterministic synthetic fixture",
+        "sourceUrl": null,
+        "retrievedAtUtc": "2026-11-17T21:25:22Z",
+        "datasetType": "synthetic",
+        "snapshotId": "synthetic-catalog-v1",
+        "license": "Generated for this repository",
+        "caveat": "Fictional object; not associated with an operational spacecraft."
+      }
+    },
+    {
+      "catalogId": "sat-atlas-d",
+      "name": "Atlas D",
+      "catalogSnapshotId": "synthetic-catalog-v1",
+      "noradId": null,
+      "sourceEpochUtc": "2026-03-20T12:00:00Z",
+      "datasetType": "synthetic",
+      "orbitRegime": "leo",
+      "meanAltitudeKm": 650,
+      "dataQuality": "synthetic_fixture",
+      "elementModel": "fixture_circular_propagator",
+      "source": {
+        "sourceName": "Perigee deterministic synthetic fixture",
+        "sourceUrl": null,
+        "retrievedAtUtc": "2026-11-17T21:25:22Z",
+        "datasetType": "synthetic",
+        "snapshotId": "synthetic-catalog-v1",
+        "license": "Generated for this repository",
+        "caveat": "Fictional object; not associated with an operational spacecraft."
+      }
+    }
+  ]
+}

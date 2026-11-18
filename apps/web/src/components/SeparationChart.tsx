@@ -1,14 +1,23 @@
 interface SeparationChartProps {
   current: number;
   minimumMeters: number;
+  samples: readonly number[];
 }
 
-const points = [42, 37, 34, 30, 26, 22, 18, 14, 11, 9, 8, 11, 17, 24, 31, 39, 45, 50];
+export default function SeparationChart({ current, minimumMeters, samples }: SeparationChartProps) {
+  if (samples.length < 2) throw new Error('Separation chart requires at least two fixture samples');
 
-export default function SeparationChart({ current, minimumMeters }: SeparationChartProps) {
-  const activeIndex = Math.min(points.length - 1, Math.round((current / 100) * (points.length - 1)));
-  const path = points.map((point, index) => `${index === 0 ? 'M' : 'L'} ${index * (100 / (points.length - 1))} ${point}`).join(' ');
-  const currentX = activeIndex * (100 / (points.length - 1));
+  const minimum = Math.min(...samples);
+  const maximum = Math.max(...samples);
+  const range = Math.max(maximum - minimum, 1);
+  const chartPoints = samples.map((sample, index) => ({
+    x: index * (100 / (samples.length - 1)),
+    y: 50 - ((sample - minimum) / range) * 42,
+  }));
+  const path = chartPoints.map(({ x, y }, index) => `${index === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ');
+  const currentX = current;
+  const minimumPoint = chartPoints[samples.indexOf(minimum)];
+  if (!minimumPoint) throw new Error('Separation chart has no minimum sample');
 
   return (
     <div className="chart-frame">
@@ -17,7 +26,7 @@ export default function SeparationChart({ current, minimumMeters }: SeparationCh
         viewBox="0 0 100 56"
         preserveAspectRatio="none"
         role="img"
-        aria-label={`Separation curve with a fixture minimum of ${minimumMeters.toLocaleString()} meters`}
+        aria-label={`Synthetic separation profile with a fixture minimum of ${minimumMeters.toLocaleString()} meters`}
       >
         <defs>
           <linearGradient id="chart-fill" x1="0" x2="0" y1="0" y2="1">
@@ -29,22 +38,25 @@ export default function SeparationChart({ current, minimumMeters }: SeparationCh
         {[14, 28, 42].map((y) => <line key={y} x1="0" x2="100" y1={y} y2={y} className="chart-grid" />)}
         <path d={path} className="chart-line" />
         <line x1={currentX} x2={currentX} y1="0" y2="56" className="chart-current" />
-        <circle cx="58.8" cy="8" r="2.1" className="chart-tca-dot" />
+        <circle cx={minimumPoint.x} cy={minimumPoint.y} r="2.1" className="chart-tca-dot" />
       </svg>
       <div className="chart-axis"><span>T−30m</span><span>Closest approach</span><span>T+30m</span></div>
       <details className="chart-data">
         <summary>View chart data</summary>
         <table>
-          <caption>Illustrative separation series</caption>
-          <thead><tr><th scope="col">Sample</th><th scope="col">Relative separation</th></tr></thead>
+          <caption>Synthetic fixture path samples</caption>
+          <thead><tr><th scope="col">Time offset</th><th scope="col">Separation</th></tr></thead>
           <tbody>
-            {points.map((point, index) => (
-              <tr key={index}><td>{index + 1}</td><td>{Math.round(minimumMeters + point * 175).toLocaleString()} m</td></tr>
+          {samples.map((sample, index) => (
+            <tr key={index}>
+              <td>{Math.round(-30 + index * (60 / (samples.length - 1)))} min</td>
+              <td>{Math.round(sample).toLocaleString()} m</td>
+            </tr>
             ))}
           </tbody>
         </table>
       </details>
-      <p className="chart-note">Fixture preview · sampled curve is illustrative</p>
+      <p className="chart-note">Simplified synthetic paths · not operational data</p>
     </div>
   );
 }

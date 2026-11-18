@@ -39,7 +39,7 @@ export default function TimelineScrubber({
     if (event.key === 'ArrowRight') onChange(Math.min(100, value + 1));
   }
 
-  const tcaPosition = 57;
+  const tcaPosition = 50;
   return (
     <section className="timeline" aria-label="Encounter timeline">
       <div className="timeline-actions">
@@ -82,7 +82,7 @@ export default function TimelineScrubber({
             onChange={(event) => onChange(Number(event.target.value))}
             onKeyDown={handleKeyDown}
             aria-label="Encounter replay time"
-            aria-valuetext={`${utcLabel}, ${Math.round(value - tcaPosition)} minutes from closest approach`}
+            aria-valuetext={`${utcLabel}, ${Math.round((value - tcaPosition) * 0.6)} minutes from closest approach`}
           />
         </div>
       </div>

@@ -5,6 +5,8 @@ import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import type { SceneMode, SceneSelection } from './types';
 
+const FOCUSED_CAMERA_DISTANCE = 7.6;
+
 interface CameraRigProps {
   mode: SceneMode;
   selected: SceneSelection;
@@ -34,7 +36,7 @@ export function CameraRig({ mode, selected, focusPositions, reducedMotion }: Cam
     const focus = currentSelection ? focusPositionsRef.current.get(currentSelection.id) : undefined;
     desiredTarget.current.set(...(focus ?? [0, 0, 0]));
     const isFocused = Boolean(currentSelection);
-    const distance = mode === 'explore' ? (isFocused ? 6.4 : 9.5) : 5.2;
+    const distance = mode === 'explore' ? (isFocused ? 6.4 : 9.5) : FOCUSED_CAMERA_DISTANCE;
     desiredPosition.current.copy(desiredTarget.current).addScaledVector(targetOffset, distance);
     moving.current = !reducedMotion;
     following.current = Boolean(currentSelection && mode !== 'explore' && !reducedMotion);
@@ -52,7 +54,7 @@ export function CameraRig({ mode, selected, focusPositions, reducedMotion }: Cam
       const currentFocus = focusPositionsRef.current.get(currentSelection.id);
       if (currentFocus) {
         desiredTarget.current.set(...currentFocus);
-        desiredPosition.current.copy(desiredTarget.current).addScaledVector(targetOffset, 5.2);
+        desiredPosition.current.copy(desiredTarget.current).addScaledVector(targetOffset, FOCUSED_CAMERA_DISTANCE);
       }
     }
     const amount = 1 - Math.exp(-delta * 2.8);

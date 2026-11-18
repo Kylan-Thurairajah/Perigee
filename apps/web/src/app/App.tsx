@@ -3,6 +3,7 @@ import type { SceneMode, SceneSelection } from '../components/SceneSlot';
 import SceneSlot from '../components/SceneSlot';
 import SeparationChart from '../components/SeparationChart';
 import TimelineScrubber from '../components/TimelineScrubber';
+import { createFixtureOrbitPaths, createFixtureSeparationSamples } from '../data/fixtureOrbitPaths';
 import { catalogObjects, catalogFixture, featuredEncounter, getObject } from '../data/fixtures';
 
 type View = 'explorer' | 'encounter' | 'maneuver';
@@ -29,7 +30,7 @@ function App() {
   const [theme, setTheme] = useState<'light' | 'dark'>(getInitialTheme);
   const [view, setView] = useState<View>('explorer');
   const [selected, setSelected] = useState<SceneSelection>(null);
-  const [timelineValue, setTimelineValue] = useState(57);
+  const [timelineValue, setTimelineValue] = useState(50);
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState(1);
   const [deltaV, setDeltaV] = useState(0.12);
@@ -37,11 +38,16 @@ function App() {
   const encounter = featuredEncounter;
   const objectA = getObject(encounter.objectAId)!;
   const objectB = getObject(encounter.objectBId)!;
+  const orbitPaths = useMemo(() => createFixtureOrbitPaths(catalogObjects, encounter), [encounter]);
+  const separationSamples = useMemo(
+    () => createFixtureSeparationSamples(orbitPaths, encounter.objectAId, encounter.objectBId),
+    [encounter.objectAId, encounter.objectBId, orbitPaths],
+  );
 
   const sceneMode: SceneMode = view === 'explorer' ? 'explore' : view;
   const sceneTimeUtc = useMemo(() => {
     const tca = new Date(encounter.tcaUtc).getTime();
-    const offsetMinutes = (timelineValue - 57) * 0.6;
+    const offsetMinutes = (timelineValue - 50) * 0.6;
     return new Date(tca + offsetMinutes * 60_000).toISOString();
   }, [encounter.tcaUtc, timelineValue]);
 
@@ -107,7 +113,7 @@ function App() {
           <div>
             <div className="eyebrow"><span className="eyebrow-line" /> ORBITAL TRAFFIC, MADE VISIBLE</div>
             <h1>{view === 'explorer' ? 'A little more perspective.' : view === 'encounter' ? 'A closer look.' : 'What if?'}</h1>
-            <p>{view === 'explorer' ? 'Explore the movement and moments shaping our near-Earth neighborhood.' : view === 'encounter' ? 'Replay a predicted close approach, one moment at a time.' : 'Explore a simplified, hypothetical along-track change.'}</p>
+            <p>{view === 'explorer' ? 'Explore the movement and moments shaping our near-Earth neighborhood.' : view === 'encounter' ? 'Replay a fixture close approach, one moment at a time.' : 'Explore a simplified, hypothetical along-track change.'}</p>
           </div>
           <div className="date-stamp"><span className="calendar-icon">◷</span><div><strong>20 MAR 2026</strong><small>FIXTURE EPOCH · 12:00 UTC</small></div></div>
         </div>
@@ -119,8 +125,9 @@ function App() {
               sceneTimeUtc={sceneTimeUtc}
               selected={selected}
               satellites={catalogObjects.map((item) => ({ id: item.catalogId, name: item.name, altitudeKm: item.meanAltitudeKm }))}
-              paths={[]}
+              paths={orbitPaths}
               encounter={{ id: encounter.encounterId, tcaUtc: encounter.tcaUtc, objectAId: encounter.objectAId, objectBId: encounter.objectBId }}
+              palette={theme}
               onSelect={(selection) => {
                 setSelected(selection);
                 if (selection?.kind === 'encounter') setView('encounter');
@@ -174,13 +181,13 @@ function App() {
                 <div className="metric-card"><span>MIN SEPARATION</span><strong>{encounter.minimumSeparationMeters.toLocaleString()}<small> m</small></strong></div>
                 <div className="metric-card"><span>RELATIVE SPEED</span><strong>{(encounter.relativeSpeedMps / 1000).toFixed(2)}<small> km/s</small></strong></div>
               </div>
-              <div className="chart-card"><div className="chart-heading"><div><span className="section-index">REPLAY PROFILE</span><h3>Separation over time</h3></div><span className="chart-unit">METERS</span></div><SeparationChart current={timelineValue} minimumMeters={encounter.minimumSeparationMeters} /></div>
+              <div className="chart-card"><div className="chart-heading"><div><span className="section-index">REPLAY PROFILE</span><h3>Separation over time</h3></div><span className="chart-unit">METERS</span></div><SeparationChart current={timelineValue} minimumMeters={encounter.minimumSeparationMeters} samples={separationSamples} /></div>
               <div className="pair-card">
                 <span className="section-index">OBJECT PAIR</span>
                 {[objectA, objectB].map((object, index) => <div className="pair-row" key={object.catalogId}><span className={`pair-orbit pair-orbit-${index}`} /><span>{object.name}<small>{object.meanAltitudeKm} km · LEO</small></span><span className="pair-id">{object.catalogId.replace('sat-', '').toUpperCase()}</span></div>)}
               </div>
               <button className="primary-button maneuver-button" onClick={() => goTo('maneuver')}>Explore a what-if <span>↗</span></button>
-              <p className="caveat-copy">Separation is not collision probability. Synthetic fixture values are for demonstration only.</p>
+              <p className="caveat-copy">Separation is not collision probability. Paths and replay are simplified synthetic fixtures, not SGP4 propagation.</p>
             </aside>
           )}
 

@@ -6,7 +6,7 @@ Perigee is a local-first orbital traffic visualization and conjunction-screening
 
 ## Repository Status
 
-This repository is currently greenfield. At the start of implementation, the repository contains `PERIGEE_CODEX_MASTER_PLAN.md` and no application source or package scaffold. Documentation in this file and `docs/` describes target behavior; it must not be interpreted as implemented behavior.
+The repository is actively implemented. Documentation describes intended or verified behavior; do not treat plans as implemented features without checking the source and tests.
 
 Do not report a feature, test, benchmark, or numerical claim as complete unless it has been verified in the repository.
 

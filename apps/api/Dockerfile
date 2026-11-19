@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine AS build
+FROM golang:1.23-alpine AS build
 WORKDIR /src
 COPY apps/api/go.mod apps/api/go.sum* ./
 RUN if [ -f go.sum ]; then go mod download; fi

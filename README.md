@@ -9,13 +9,13 @@ Perigee is a local-first orbital traffic visualization and conjunction-screening
 Requirements:
 
 - Node.js 18 or newer
-- Go 1.22 or newer
+- Go 1.23.4 or newer
 
 Start the API:
 
 ```powershell
 Set-Location apps/api
-go run main.go api.go
+go run .
 ```
 
 Start the web app in a second terminal:
@@ -36,6 +36,14 @@ docker compose up --build
 
 Open `http://localhost:5173` after the containers report healthy or become reachable.
 
+## Screen a local OMM snapshot
+
+For a ready-to-import example, use the [two-record verification fixture](data/reference/screening-demo.omm.json) and the dates in the [computed screening walkthrough](docs/DEMO_SCRIPT.md#computed-screening-walkthrough).
+
+Open **Screening**, choose an OMM JSON file, and enter its source, snapshot ID, retrieval time, and maximum element age. The API accepts a single OMM record or an array. A screening run requires 2–100 records with fresh epochs and supported near-Earth SGP4 elements. Enter the screening window in local time, the miss-distance threshold in meters, and the coarse step in seconds. The results show the closest-approach time in UTC, miss distance, relative speed, and model caveats.
+
+The API keeps snapshots and jobs in bounded memory. Restarting the API clears them. Select **Open replay** on a result to scrub the two computed tracks and their separation chart. The TEME replay spans five minutes either side of the reported closest approach and may extend beyond the screening window. In the replay, **Preview what-if** compares sampled separation after a small hypothetical velocity change at the replay start. The preview uses an educational two-body approximation. The standalone Encounter and Maneuver Lab tabs use synthetic fixtures.
+
 ## Verify
 
 ```powershell
@@ -49,6 +57,14 @@ Set-Location ../api
 go test ./...
 ```
 
+## Video demo
+
+The fixture-backed walkthrough and recording checklist are in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md). The actual video and GIF have not been captured yet.
+
+Open **Encounter → Play fictional collision** to watch a scripted impact with a short WebGL burst. Use the replay scrubber or switch between 0.5×, 1×, and 2×. The screen also offers the original featured close approach.
+
+Reproducible screening measurements are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+
 ## Current data and limits
 
-The M0/M1 demo uses clearly labeled synthetic fixtures. It does not represent operational ephemerides, real conjunction predictions, or collision probability. The Maneuver Lab is an educational what-if preview, not physical orbit propagation or operational guidance.
+The demo uses clearly labeled synthetic fixtures. It does not represent operational ephemerides, real conjunction predictions, or collision probability. Encounter replay uses simplified circular fixture tracks. The Maneuver Lab applies a linearized offset to those samples; it is not physical orbit propagation or operational guidance.

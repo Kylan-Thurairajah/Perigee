@@ -1,4 +1,5 @@
 import { Line } from '@react-three/drei';
+import { memo } from 'react';
 import { toScenePosition } from './sceneMath';
 import type { EncounterVisual, OrbitPathVisual, SampledOrbitPathVisual, SceneSelection, SceneOrbitPathVisual } from './types';
 
@@ -9,7 +10,7 @@ interface OrbitTracksProps {
   palette: 'light' | 'dark';
 }
 
-export function OrbitTracks({ paths, selected, encounter, palette }: OrbitTracksProps) {
+export const OrbitTracks = memo(function OrbitTracks({ paths, selected, encounter, palette }: OrbitTracksProps) {
   return (
     <>
       {paths.map((path, index) => {
@@ -22,6 +23,7 @@ export function OrbitTracks({ paths, selected, encounter, palette }: OrbitTracks
         const isDimmedEncounterTrack = selected?.kind === 'encounter' && !isEncounterSatellite;
         const sampledPath = path as SampledOrbitPathVisual;
         const fixturePath = path as SceneOrbitPathVisual;
+        const isSimulatedPath = sampled && sampledPath.variant === 'simulated';
         const variantColor = sampled
           ? sampledPath.variant === 'simulated' ? '#eba16f' : undefined
           : fixturePath.tone === 'hypothetical' ? '#eba16f' : undefined;
@@ -35,10 +37,10 @@ export function OrbitTracks({ paths, selected, encounter, palette }: OrbitTracks
               ? sampledPath.points.map((point) => toScenePosition(point.positionKm))
               : fixturePath.points.map((point) => [...point])}
             color={color}
-            lineWidth={isSelectedSatellite ? 1.8 : 1}
+            lineWidth={isSelectedSatellite || isSimulatedPath ? 2 : 1}
             transparent
-            opacity={isSelectedSatellite || isEncounterSatellite ? 0.92 : isDimmedEncounterTrack ? 0.2 : 0.62}
-            dashed={sampled ? sampledPath.variant === 'simulated' : fixturePath.tone === 'hypothetical'}
+            opacity={isSelectedSatellite || isEncounterSatellite || isSimulatedPath ? 0.96 : isDimmedEncounterTrack ? 0.2 : 0.62}
+            dashed={sampled ? isSimulatedPath : fixturePath.tone === 'hypothetical'}
             dashSize={0.09}
             gapSize={0.055}
           />
@@ -46,4 +48,4 @@ export function OrbitTracks({ paths, selected, encounter, palette }: OrbitTracks
       })}
     </>
   );
-}
+});

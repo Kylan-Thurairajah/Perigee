@@ -8,7 +8,7 @@ interface EarthProps {
   paused: boolean;
 }
 
-interface LandVoxel {
+interface SurfaceVoxel {
   position: THREE.Vector3;
   quaternion: THREE.Quaternion;
   color: THREE.Color;
@@ -36,17 +36,23 @@ function isLand(longitude: number, latitude: number): boolean {
   });
 }
 
-function createLandVoxels(): LandVoxel[] {
-  const voxels: LandVoxel[] = [];
-  const rows = 32;
-  const columns = 64;
-  const radius = 2.025;
+function isCloud(longitude: number, latitude: number): boolean {
+  if (Math.abs(latitude) > 1.15) return false;
+  const band = Math.sin(longitude * 2.1 + latitude * 3.4 + Math.sin(latitude * 5) * 0.45);
+  const wisps = Math.sin(longitude * 7.3 - latitude * 2.8);
+  return band > 0.78 && wisps > -0.1;
+}
+
+function createSurfaceVoxels(): SurfaceVoxel[] {
+  const voxels: SurfaceVoxel[] = [];
+  const rows = 28;
+  const columns = 56;
+  const radius = 2.035;
 
   for (let row = 1; row < rows - 1; row += 1) {
-    const latitude = Math.PI / 2 - (row / rows) * Math.PI;
+    const latitude = Math.PI / 2 - ((row + 0.5) / rows) * Math.PI;
     for (let column = 0; column < columns; column += 1) {
-      const longitude = (column / columns) * Math.PI * 2 - Math.PI;
-      if (!isLand(longitude, latitude)) continue;
+      const longitude = ((column + 0.5) / columns) * Math.PI * 2 - Math.PI;
       const normal = new THREE.Vector3(
         Math.cos(latitude) * Math.cos(longitude),
         Math.sin(latitude),
@@ -58,8 +64,16 @@ function createLandVoxels(): LandVoxel[] {
         normal,
       );
       const variation = Math.sin(column * 12.9898 + row * 78.233) * 0.5 + 0.5;
-      const color = new THREE.Color().setHSL(0.36, 0.18 + variation * 0.08, 0.48 + variation * 0.12);
-      voxels.push({ position, quaternion, color, scale: 0.07 + variation * 0.025 });
+      const land = isLand(longitude, latitude);
+      const cloud = !land && isCloud(longitude, latitude);
+      const polarIce = !land && Math.abs(latitude) > 1.3;
+      const color = land
+        ? new THREE.Color().setHSL(0.34 + variation * 0.035, 0.38 + variation * 0.12, 0.46 + variation * 0.12)
+        : cloud || polarIce
+          ? new THREE.Color().setHSL(0.52, 0.17, 0.83 + variation * 0.08)
+          : new THREE.Color().setHSL(0.56 + variation * 0.025, 0.42 + variation * 0.08, 0.42 + variation * 0.12);
+      const scale = cloud ? 0.055 + variation * 0.018 : 0.105 + variation * 0.015;
+      voxels.push({ position, quaternion, color, scale });
     }
   }
   return voxels;
@@ -67,17 +81,19 @@ function createLandVoxels(): LandVoxel[] {
 
 export function Earth({ palette, reducedMotion, paused }: EarthProps) {
   const group = useRef<THREE.Group>(null);
-  const landMesh = useRef<THREE.InstancedMesh>(null);
-  const landVoxels = useMemo(createLandVoxels, []);
+  const surfaceMesh = useRef<THREE.InstancedMesh>(null);
+  const atmosphereMesh = useRef<THREE.Mesh>(null);
+  const atmosphereMaterial = useRef<THREE.MeshBasicMaterial>(null);
+  const surfaceVoxels = useMemo(createSurfaceVoxels, []);
   const ocean = palette === 'dark' ? '#3d7699' : '#5d94bb';
   const atmosphere = palette === 'dark' ? '#263f53' : '#aecbda';
 
   useLayoutEffect(() => {
-    const mesh = landMesh.current;
+    const mesh = surfaceMesh.current;
     if (!mesh) return;
     const matrix = new THREE.Matrix4();
-    for (let index = 0; index < landVoxels.length; index += 1) {
-      const voxel = landVoxels[index];
+    for (let index = 0; index < surfaceVoxels.length; index += 1) {
+      const voxel = surfaceVoxels[index];
       matrix.compose(
         voxel.position,
         voxel.quaternion,
@@ -88,26 +104,29 @@ export function Earth({ palette, reducedMotion, paused }: EarthProps) {
     }
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [landVoxels]);
+  }, [surfaceVoxels]);
 
-  useFrame((_, delta) => {
-    if (!group.current || reducedMotion || paused) return;
-    group.current.rotation.y += delta * 0.012;
+  useFrame((state, delta) => {
+    if (reducedMotion || paused) return;
+    if (group.current) group.current.rotation.y += delta * 0.018;
+    const pulse = (Math.sin(state.clock.elapsedTime * 0.65) + 1) / 2;
+    atmosphereMesh.current?.scale.setScalar(1.025 + pulse * 0.006);
+    if (atmosphereMaterial.current) atmosphereMaterial.current.opacity = 0.045 + pulse * 0.025;
   });
 
   return (
     <group ref={group}>
       <mesh>
-        <icosahedronGeometry args={[2, 4]} />
+        <icosahedronGeometry args={[2, 3]} />
         <meshStandardMaterial color={ocean} roughness={0.96} flatShading />
       </mesh>
-      <instancedMesh ref={landMesh} args={[undefined, undefined, landVoxels.length]} castShadow receiveShadow>
+      <instancedMesh ref={surfaceMesh} args={[undefined, undefined, surfaceVoxels.length]} castShadow receiveShadow>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial roughness={0.9} flatShading />
       </instancedMesh>
-      <mesh scale={1.025}>
+      <mesh ref={atmosphereMesh} scale={1.025}>
         <icosahedronGeometry args={[2, 3]} />
-        <meshBasicMaterial color={atmosphere} transparent opacity={0.055} side={THREE.BackSide} />
+        <meshBasicMaterial ref={atmosphereMaterial} color={atmosphere} transparent opacity={0.045} side={THREE.BackSide} />
       </mesh>
     </group>
   );

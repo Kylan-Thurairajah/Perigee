@@ -76,6 +76,41 @@ paths:
         default:
           $ref: "#/components/responses/Error"
 
+  /api/catalog/omm:
+    post:
+      operationId: validateOMMCatalog
+      summary: Validate and cache a local OMM JSON snapshot
+      description: |
+        Validates an OMM JSON object or array and returns normalized records.
+        The snapshot is retained in a bounded in-memory cache for screening,
+        but is not written to disk or merged into the fixture catalog. The
+        cache is cleared on API restart and may evict its least-recently-used
+        entry when full.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OMMImportRequest"
+        description: OMM JSON import payloads are limited to 4 MiB.
+      responses:
+        "200":
+          description: Validated OMM records and propagation limitations.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OMMImportResponse"
+        "400":
+          $ref: "#/components/responses/Error"
+        "413":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
   /api/demo/featured:
     get:
       operationId: getFeaturedEncounter
@@ -94,12 +129,17 @@ paths:
     post:
       operationId: createScreening
       summary: Start an asynchronous screening run
+      description: |
+        Runs are queued in a bounded in-process worker pool. The referenced
+        OMM snapshot must first be imported through POST /api/catalog/omm.
+        Queue, snapshot, and run state are volatile and are lost on API restart.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateScreeningRequest"
+        description: Screening request payloads are limited to 16 KiB.
       responses:
         "202":
           description: Screening accepted.
@@ -109,7 +149,13 @@ paths:
                 $ref: "#/components/schemas/CreateScreeningResponse"
         "400":
           $ref: "#/components/responses/Error"
+        "413":
+          $ref: "#/components/responses/Error"
         "404":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+        "503":
           $ref: "#/components/responses/Error"
         default:
           $ref: "#/components/responses/Error"
@@ -165,6 +211,92 @@ paths:
               schema:
                 $ref: "#/components/schemas/EncounterPage"
         "404":
+          $ref: "#/components/responses/Error"
+        "400":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/screenings/{runId}/encounters/{encounterId}:
+    get:
+      operationId: getScreeningEncounter
+      summary: Read a screened encounter and its bounded TEME replay
+      description: Available for retained successful runs, independently of snapshot cache eviction.
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: encounterId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Encounter metrics and 61 paired SGP4 samples at 10-second intervals centered on TCA. The replay window may extend beyond the screening window.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreeningEncounterDetail"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "422":
+          $ref: "#/components/responses/Error"
+        default:
+          $ref: "#/components/responses/Error"
+
+  /api/screenings/{runId}/encounters/{encounterId}/what-if:
+    post:
+      operationId: previewScreeningWhatIf
+      summary: Preview a fixed-time educational impulse for object A
+      description: Computes an on-demand two-body offset on the SGP4 replay grid. The request does not modify the run.
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: encounterId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [alongTrackDeltaVMps]
+              properties:
+                alongTrackDeltaVMps:
+                  type: number
+                  minimum: -0.5
+                  maximum: 0.5
+                  description: Signed change in m/s along object A's initial velocity at the replay start.
+      responses:
+        "200":
+          description: Paired TEME samples on the original 61-point replay grid.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScreeningWhatIfResult"
+        "400":
+          $ref: "#/components/responses/Error"
+        "404":
+          $ref: "#/components/responses/Error"
+        "409":
+          $ref: "#/components/responses/Error"
+        "413":
+          $ref: "#/components/responses/Error"
+        "422":
           $ref: "#/components/responses/Error"
         default:
           $ref: "#/components/responses/Error"
@@ -409,6 +541,204 @@ components:
             - string
             - "null"
 
+    OMMImportRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+        - maxEpochAgeSeconds
+        - records
+      properties:
+        source:
+          $ref: "#/components/schemas/OMMImportSource"
+        maxEpochAgeSeconds:
+          type: integer
+          minimum: 1
+          maximum: 9223372036
+          description: Maximum accepted age before records are marked stale.
+        records:
+          oneOf:
+            - type: array
+              minItems: 1
+              maxItems: 10000
+              items:
+                $ref: "#/components/schemas/OMMElement"
+            - $ref: "#/components/schemas/OMMElement"
+
+    OMMImportSource:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - snapshotId
+        - retrievedAtUtc
+      properties:
+        name:
+          type: string
+          minLength: 1
+        url:
+          type: string
+          format: uri
+        snapshotId:
+          type: string
+          minLength: 1
+        retrievedAtUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+
+    OMMElement:
+      type: object
+      description: OMM JSON fields use the standard uppercase property names.
+      additionalProperties: true
+      required:
+        - OBJECT_NAME
+        - EPOCH
+        - MEAN_MOTION
+        - ECCENTRICITY
+        - INCLINATION
+        - RA_OF_ASC_NODE
+        - ARG_OF_PERICENTER
+        - MEAN_ANOMALY
+        - NORAD_CAT_ID
+      properties:
+        OBJECT_NAME:
+          type: string
+          minLength: 1
+        OBJECT_ID:
+          type: string
+        CENTER_NAME:
+          type: string
+        REF_FRAME:
+          type: string
+        TIME_SYSTEM:
+          type: string
+        MEAN_ELEMENT_THEORY:
+          type: string
+        EPOCH:
+          type: string
+          description: ISO 8601 epoch; UTC is required when the value has no zone.
+        MEAN_MOTION:
+          type: number
+          exclusiveMinimum: 0
+          exclusiveMaximum: 100
+          description: Mean motion in revolutions per day.
+        ECCENTRICITY:
+          type: number
+          minimum: 0
+          exclusiveMaximum: 1
+        INCLINATION:
+          type: number
+          minimum: 0
+          maximum: 180
+          description: Inclination in degrees.
+        RA_OF_ASC_NODE:
+          type: number
+          minimum: 0
+          maximum: 360
+          description: Right ascension of ascending node in degrees.
+        ARG_OF_PERICENTER:
+          type: number
+          minimum: 0
+          maximum: 360
+          description: Argument of pericenter in degrees.
+        MEAN_ANOMALY:
+          type: number
+          minimum: 0
+          maximum: 360
+          description: Mean anomaly in degrees.
+        EPHEMERIS_TYPE:
+          type: integer
+        CLASSIFICATION_TYPE:
+          type: string
+        NORAD_CAT_ID:
+          type: integer
+          minimum: 1
+        ELEMENT_SET_NO:
+          type: integer
+        REV_AT_EPOCH:
+          type: integer
+        BSTAR:
+          type: number
+        MEAN_MOTION_DOT:
+          type: number
+        MEAN_MOTION_DDOT:
+          type: number
+
+    OMMImportResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - snapshotId
+        - source
+        - records
+        - caveats
+      properties:
+        snapshotId:
+          type: string
+        source:
+          $ref: "#/components/schemas/OMMCatalogSource"
+        records:
+          type: array
+          minItems: 1
+          items:
+            $ref: "#/components/schemas/OMMCatalogRecord"
+        caveats:
+          type: array
+          items:
+            type: string
+
+    OMMCatalogSource:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - snapshotId
+        - retrievedAtUtc
+      properties:
+        name:
+          type: string
+        url:
+          type: string
+        snapshotId:
+          type: string
+        retrievedAtUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+
+    OMMCatalogRecord:
+      type: object
+      additionalProperties: false
+      required:
+        - element
+        - rawElement
+        - noradCatId
+        - epochUtc
+        - source
+        - dataQuality
+        - propagationSupported
+      properties:
+        element:
+          $ref: "#/components/schemas/OMMElement"
+        rawElement:
+          $ref: "#/components/schemas/OMMElement"
+        noradCatId:
+          type: integer
+        epochUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        source:
+          $ref: "#/components/schemas/OMMCatalogSource"
+        dataQuality:
+          type: string
+          enum:
+            - public_snapshot
+            - stale
+        missingFields:
+          type: array
+          items:
+            type: string
+        propagationSupported:
+          type: boolean
+        propagationLimitation:
+          type: string
+
     EncounterSummary:
       type: object
       additionalProperties: false
@@ -448,6 +778,7 @@ components:
           minimum: 0
         sourceEpochUtc:
           $ref: "#/components/schemas/Rfc3339Utc"
+          description: For screening results, the earlier epoch of the pair's two OMM elements.
         datasetType:
           $ref: "#/components/schemas/DatasetType"
         dataQuality:
@@ -521,6 +852,7 @@ components:
       required:
         - items
         - nextCursor
+        - caveats
       properties:
         items:
           type: array
@@ -530,6 +862,11 @@ components:
           type:
             - string
             - "null"
+        caveats:
+          type: array
+          description: Limitations that apply to screening results in this page.
+          items:
+            type: string
 
     FeaturedEncounter:
       type: object
@@ -707,6 +1044,52 @@ components:
         separationMeters:
           type: number
           minimum: 0
+
+    ScreeningEncounterDetail:
+      type: object
+      additionalProperties: false
+      required: [encounter, objectAName, objectBName, trajectory, caveats]
+      properties:
+        encounter:
+          $ref: "#/components/schemas/EncounterSummary"
+        objectAName:
+          type: string
+        objectBName:
+          type: string
+        trajectory:
+          $ref: "#/components/schemas/Trajectory"
+        caveats:
+          type: array
+          items:
+            type: string
+
+    ScreeningWhatIfResult:
+      type: object
+      additionalProperties: false
+      required: [encounterId, objectId, impulseAtUtc, alongTrackDeltaVMps, model, samples, caveats]
+      properties:
+        encounterId:
+          type: string
+        objectId:
+          type: string
+        impulseAtUtc:
+          $ref: "#/components/schemas/Rfc3339Utc"
+        alongTrackDeltaVMps:
+          type: number
+          minimum: -0.5
+          maximum: 0.5
+        model:
+          const: sgp4_baseline_plus_two_body_offset
+        samples:
+          type: array
+          minItems: 61
+          maxItems: 61
+          items:
+            $ref: "#/components/schemas/TrajectorySample"
+        caveats:
+          type: array
+          items:
+            type: string
 
     Trajectory:
       type: object

@@ -10,3 +10,6 @@ coverage/
 
 *.log
 .DS_Store
+
+# Local planning prompt; retain locally but do not publish.
+/PERIGEE_CODEX_MASTER_PLAN.md

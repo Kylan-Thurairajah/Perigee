@@ -49,6 +49,8 @@ export interface EncounterVisual {
 
 export interface SceneProps {
   mode: SceneMode;
+  /** Negative before the illustrative impact, zero at impact, one when the effect ends. */
+  collisionProgress?: number;
   sceneTimeUtc: string;
   selected: SceneSelection;
   satellites: readonly SatelliteVisual[];

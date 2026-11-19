@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   EARTH_RADIUS_KM,
   EARTH_RADIUS_SCENE,
+  ORBIT_VISUAL_CLEARANCE_SCENE,
   fixturePositionKm,
   interpolatePathPosition,
   toScenePosition,
-} from './sceneMath';
-import type { OrbitPathPoint } from './types';
+} from '../scene/sceneMath';
+import type { OrbitPathPoint } from '../scene/types';
 
 const points: OrbitPathPoint[] = [
   { atUtc: '2026-03-20T12:00:00Z', positionKm: [7000, 0, 0] },
@@ -27,6 +28,14 @@ describe('sceneMath', () => {
   it('maps Earth-centered kilometers into the scene scale', () => {
     expect(toScenePosition([EARTH_RADIUS_KM, 0, 0])[0]).toBeCloseTo(EARTH_RADIUS_SCENE);
     expect(toScenePosition([EARTH_RADIUS_KM, 0, 0]).slice(1)).toEqual([0, 0]);
+  });
+
+  it('adds visual clearance to orbit paths without changing their direction', () => {
+    const position = toScenePosition([EARTH_RADIUS_KM + 550, 0, 0]);
+    const expectedRadius = ((EARTH_RADIUS_KM + 550) * EARTH_RADIUS_SCENE / EARTH_RADIUS_KM)
+      + ORBIT_VISUAL_CLEARANCE_SCENE;
+    expect(position[0]).toBeCloseTo(expectedRadius);
+    expect(position.slice(1)).toEqual([0, 0]);
   });
 
   it('creates a deterministic visual fixture position at the requested altitude', () => {

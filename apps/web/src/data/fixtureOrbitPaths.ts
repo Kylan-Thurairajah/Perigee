@@ -95,13 +95,59 @@ export function createFixtureOrbitPaths(
   }));
 }
 
+export function createAlongTrackPreviewPath(
+  path: SampledOrbitPathVisual,
+  deltaVMetersPerSecond: number,
+  impulseAtUtc: string,
+): SampledOrbitPathVisual {
+  if (!Number.isFinite(deltaVMetersPerSecond)) throw new Error('Fixture delta-v must be finite');
+  if (path.points.length < 2) throw new Error('Fixture maneuver path requires at least two samples');
+
+  const impulseTime = Date.parse(impulseAtUtc);
+  const firstTime = Date.parse(path.points[0].atUtc);
+  const lastTime = Date.parse(path.points[path.points.length - 1].atUtc);
+  if (!Number.isFinite(impulseTime) || impulseTime < firstTime || impulseTime > lastTime) {
+    throw new Error(`Fixture impulse time is outside the path: ${impulseAtUtc}`);
+  }
+
+  const points = path.points.map((point, index): OrbitPathPoint => {
+    const pointTime = Date.parse(point.atUtc);
+    if (!Number.isFinite(pointTime)) throw new Error(`Invalid fixture path time: ${point.atUtc}`);
+
+    const previous = path.points[Math.max(0, index - 1)];
+    const next = path.points[Math.min(path.points.length - 1, index + 1)];
+    const tangent = [
+      next.positionKm[0] - previous.positionKm[0],
+      next.positionKm[1] - previous.positionKm[1],
+      next.positionKm[2] - previous.positionKm[2],
+    ] as const;
+    const tangentLength = Math.hypot(...tangent);
+    if (!Number.isFinite(tangentLength) || tangentLength === 0) {
+      throw new Error(`Fixture path has no along-track direction at sample ${index}`);
+    }
+
+    const offsetKm = deltaVMetersPerSecond * Math.max(0, (pointTime - impulseTime) / 1000) / 1000;
+    return {
+      atUtc: point.atUtc,
+      positionKm: [
+        point.positionKm[0] + (tangent[0] / tangentLength) * offsetKm,
+        point.positionKm[1] + (tangent[1] / tangentLength) * offsetKm,
+        point.positionKm[2] + (tangent[2] / tangentLength) * offsetKm,
+      ],
+    };
+  });
+
+  return { ...path, variant: 'simulated', points };
+}
+
 export function createFixtureSeparationSamples(
   paths: readonly SampledOrbitPathVisual[],
   objectAId: string,
   objectBId: string,
+  objectBVariant: 'original' | 'simulated' = 'original',
 ): number[] {
-  const pathA = paths.find(({ satelliteId }) => satelliteId === objectAId);
-  const pathB = paths.find(({ satelliteId }) => satelliteId === objectBId);
+  const pathA = paths.find(({ satelliteId, variant }) => satelliteId === objectAId && (variant ?? 'original') === 'original');
+  const pathB = paths.find(({ satelliteId, variant }) => satelliteId === objectBId && (variant ?? 'original') === objectBVariant);
   if (!pathA || !pathB) throw new Error('Fixture encounter paths are missing an object');
   if (pathA.points.length !== pathB.points.length) throw new Error('Fixture encounter paths are not aligned');
 

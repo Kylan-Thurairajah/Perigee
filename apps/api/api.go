@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
@@ -15,7 +16,10 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	"github.com/perigee/perigee/apps/api/internal/orbit"
 )
 
 type SourceMetadata struct {
@@ -51,32 +55,32 @@ type CatalogFixture struct {
 }
 
 type EncounterSummary struct {
-	EncounterID           string  `json:"encounterId"`
-	ObjectAID             string  `json:"objectAId"`
-	ObjectBID             string  `json:"objectBId"`
-	CatalogSnapshotID     string  `json:"catalogSnapshotId"`
-	RunID                 *string `json:"runId"`
-	TCAUTC                string  `json:"tcaUtc"`
-	MinimumSeparationM    float64 `json:"minimumSeparationMeters"`
-	RelativeSpeedMPS      float64 `json:"relativeSpeedMps"`
-	SourceEpochUTC        string  `json:"sourceEpochUtc"`
-	DatasetType           string  `json:"datasetType"`
-	DataQuality           string  `json:"dataQuality"`
-	Featured              bool    `json:"featured"`
+	EncounterID        string  `json:"encounterId"`
+	ObjectAID          string  `json:"objectAId"`
+	ObjectBID          string  `json:"objectBId"`
+	CatalogSnapshotID  string  `json:"catalogSnapshotId"`
+	RunID              *string `json:"runId"`
+	TCAUTC             string  `json:"tcaUtc"`
+	MinimumSeparationM float64 `json:"minimumSeparationMeters"`
+	RelativeSpeedMPS   float64 `json:"relativeSpeedMps"`
+	SourceEpochUTC     string  `json:"sourceEpochUtc"`
+	DatasetType        string  `json:"datasetType"`
+	DataQuality        string  `json:"dataQuality"`
+	Featured           bool    `json:"featured"`
 }
 
 type EncounterFixture struct {
-	CatalogSnapshotID  string            `json:"catalogSnapshotId"`
-	DatasetType        string            `json:"datasetType"`
-	FeaturedEncounterID string           `json:"featuredEncounterId"`
-	SourceEpochUTC     string            `json:"sourceEpochUtc"`
-	Source             SourceMetadata    `json:"source"`
-	Encounters         []EncounterSummary `json:"encounters"`
+	CatalogSnapshotID   string             `json:"catalogSnapshotId"`
+	DatasetType         string             `json:"datasetType"`
+	FeaturedEncounterID string             `json:"featuredEncounterId"`
+	SourceEpochUTC      string             `json:"sourceEpochUtc"`
+	Source              SourceMetadata     `json:"source"`
+	Encounters          []EncounterSummary `json:"encounters"`
 }
 
 type CatalogPage struct {
-	Items     []CatalogObject `json:"items"`
-	NextCursor *string        `json:"nextCursor"`
+	Items      []CatalogObject `json:"items"`
+	NextCursor *string         `json:"nextCursor"`
 }
 
 type FeaturedEncounter struct {
@@ -94,34 +98,34 @@ type ErrorResponse struct {
 
 type EncounterDetails struct {
 	EncounterSummary
-	ObjectA CatalogObject `json:"objectA"`
-	ObjectB CatalogObject `json:"objectB"`
+	ObjectA CatalogObject  `json:"objectA"`
+	ObjectB CatalogObject  `json:"objectB"`
 	Source  SourceMetadata `json:"source"`
 	Caveats []string       `json:"caveats"`
 }
 
 type FrameMetadata struct {
-	Frame          string `json:"frame"`
-	PositionUnit   string `json:"positionUnit"`
-	VelocityUnit   string `json:"velocityUnit"`
-	DistanceUnit   string `json:"distanceUnit"`
-	FrameCaveat    string `json:"frameCaveat"`
+	Frame        string `json:"frame"`
+	PositionUnit string `json:"positionUnit"`
+	VelocityUnit string `json:"velocityUnit"`
+	DistanceUnit string `json:"distanceUnit"`
+	FrameCaveat  string `json:"frameCaveat"`
 }
 
 type ObjectState struct {
-	PositionXKM float64 `json:"positionXKm"`
-	PositionYKM float64 `json:"positionYKm"`
-	PositionZKM float64 `json:"positionZKm"`
+	PositionXKM  float64 `json:"positionXKm"`
+	PositionYKM  float64 `json:"positionYKm"`
+	PositionZKM  float64 `json:"positionZKm"`
 	VelocityXMPS float64 `json:"velocityXMps"`
 	VelocityYMPS float64 `json:"velocityYMps"`
 	VelocityZMPS float64 `json:"velocityZMps"`
 }
 
 type TrajectorySample struct {
-	AtUTC           string      `json:"atUtc"`
-	ObjectA         ObjectState `json:"objectA"`
-	ObjectB         ObjectState `json:"objectB"`
-	SeparationMeters float64    `json:"separationMeters"`
+	AtUTC            string      `json:"atUtc"`
+	ObjectA          ObjectState `json:"objectA"`
+	ObjectB          ObjectState `json:"objectB"`
+	SeparationMeters float64     `json:"separationMeters"`
 }
 
 type Trajectory struct {
@@ -135,35 +139,61 @@ type Trajectory struct {
 }
 
 type ManeuverRequest struct {
-	ManeuverTimeUTC     string  `json:"maneuverTimeUtc"`
+	ManeuverTimeUTC     string   `json:"maneuverTimeUtc"`
 	AlongTrackDeltaVMPS *float64 `json:"alongTrackDeltaVMps"`
 }
 
+type OMMImportSource struct {
+	Name           string `json:"name"`
+	URL            string `json:"url,omitempty"`
+	SnapshotID     string `json:"snapshotId"`
+	RetrievedAtUTC string `json:"retrievedAtUtc"`
+}
+
+type OMMImportRequest struct {
+	Source             OMMImportSource `json:"source"`
+	MaxEpochAgeSeconds int64           `json:"maxEpochAgeSeconds"`
+	Records            json.RawMessage `json:"records"`
+}
+
+type OMMImportResponse struct {
+	SnapshotID string                   `json:"snapshotId"`
+	Source     orbit.CatalogSource      `json:"source"`
+	Records    []orbit.OMMCatalogRecord `json:"records"`
+	Caveats    []string                 `json:"caveats"`
+}
+
 type ManeuverMetrics struct {
-	TCAUTC                 string  `json:"tcaUtc"`
+	TCAUTC                  string  `json:"tcaUtc"`
 	MinimumSeparationMeters float64 `json:"minimumSeparationMeters"`
-	RelativeSpeedMPS       float64 `json:"relativeSpeedMps"`
+	RelativeSpeedMPS        float64 `json:"relativeSpeedMps"`
 }
 
 type ManeuverResult struct {
-	ScenarioID            string          `json:"scenarioId"`
-	EncounterID           string          `json:"encounterId"`
-	ManeuverTimeUTC       string          `json:"maneuverTimeUtc"`
-	AlongTrackDeltaVMPS   float64         `json:"alongTrackDeltaVMps"`
-	OriginalMetrics       ManeuverMetrics `json:"originalMetrics"`
-	SimulatedMetrics      ManeuverMetrics `json:"simulatedMetrics"`
-	MissDistanceDeltaM    float64         `json:"missDistanceDeltaMeters"`
-	OriginalTrajectory    Trajectory      `json:"originalTrajectory"`
-	SimulatedTrajectory   Trajectory      `json:"simulatedTrajectory"`
-	Limitations           []string        `json:"limitations"`
-	DatasetType           string          `json:"datasetType"`
+	ScenarioID          string          `json:"scenarioId"`
+	EncounterID         string          `json:"encounterId"`
+	ManeuverTimeUTC     string          `json:"maneuverTimeUtc"`
+	AlongTrackDeltaVMPS float64         `json:"alongTrackDeltaVMps"`
+	OriginalMetrics     ManeuverMetrics `json:"originalMetrics"`
+	SimulatedMetrics    ManeuverMetrics `json:"simulatedMetrics"`
+	MissDistanceDeltaM  float64         `json:"missDistanceDeltaMeters"`
+	OriginalTrajectory  Trajectory      `json:"originalTrajectory"`
+	SimulatedTrajectory Trajectory      `json:"simulatedTrajectory"`
+	Limitations         []string        `json:"limitations"`
+	DatasetType         string          `json:"datasetType"`
 }
 
 type API struct {
-	catalog   CatalogFixture
+	catalog    CatalogFixture
 	encounters EncounterFixture
-	objects   map[string]CatalogObject
-	byID      map[string]EncounterSummary
+	objects    map[string]CatalogObject
+	byID       map[string]EncounterSummary
+
+	mu                   sync.Mutex
+	ommSnapshots         map[string]ommSnapshot
+	screenings           map[string]*screeningRun
+	screeningQueue       chan screeningTask
+	screeningWorkersOnce sync.Once
 }
 
 func NewHandler() (http.Handler, error) {
@@ -185,10 +215,13 @@ func NewHandlerWithFixtureDir(dir string) (http.Handler, error) {
 	}
 
 	api := &API{
-		catalog: catalog,
-		encounters: encounters,
-		objects: make(map[string]CatalogObject, len(catalog.Objects)),
-		byID: make(map[string]EncounterSummary, len(encounters.Encounters)),
+		catalog:        catalog,
+		encounters:     encounters,
+		objects:        make(map[string]CatalogObject, len(catalog.Objects)),
+		byID:           make(map[string]EncounterSummary, len(encounters.Encounters)),
+		ommSnapshots:   make(map[string]ommSnapshot),
+		screenings:     make(map[string]*screeningRun),
+		screeningQueue: make(chan screeningTask, screeningQueueSize),
 	}
 	for _, object := range catalog.Objects {
 		api.objects[object.CatalogID] = object
@@ -237,8 +270,22 @@ func readJSON(path string, target any) error {
 }
 
 func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet && !(r.Method == http.MethodPost && strings.HasPrefix(r.URL.Path, "/api/encounters/")) {
-		w.Header().Set("Allow", "GET, POST")
+	if strings.HasPrefix(r.URL.Path, "/api/screenings/") {
+		a.serveScreeningRun(w, r)
+		return
+	}
+	postAllowed := r.Method == http.MethodPost &&
+		(strings.HasPrefix(r.URL.Path, "/api/encounters/") || r.URL.Path == "/api/catalog/omm" || r.URL.Path == "/api/screenings")
+	if r.Method != http.MethodGet && !postAllowed {
+		allow := "GET"
+		if r.URL.Path == "/api/catalog/omm" {
+			allow = "POST"
+		} else if r.URL.Path == "/api/screenings" {
+			allow = "POST"
+		} else if strings.HasPrefix(r.URL.Path, "/api/encounters/") {
+			allow = "GET, POST"
+		}
+		w.Header().Set("Allow", allow)
 		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method is not supported", nil)
 		return
 	}
@@ -258,6 +305,22 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			a.listCatalog(w, r)
 			return
 		}
+	case r.URL.Path == "/api/catalog/omm":
+		if r.Method == http.MethodPost {
+			a.importOMMCatalog(w, r)
+			return
+		}
+		w.Header().Set("Allow", http.MethodPost)
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method is not supported", nil)
+		return
+	case r.URL.Path == "/api/screenings":
+		if r.Method == http.MethodPost {
+			a.createScreening(w, r)
+			return
+		}
+		w.Header().Set("Allow", http.MethodPost)
+		writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method is not supported", nil)
+		return
 	case r.URL.Path == "/api/demo/featured":
 		if r.Method == http.MethodGet {
 			a.featured(w)
@@ -277,6 +340,77 @@ func (a *API) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Allow", "GET")
 	writeError(w, http.StatusMethodNotAllowed, "method_not_allowed", "method is not supported", nil)
+}
+
+func (a *API) importOMMCatalog(w http.ResponseWriter, r *http.Request) {
+	const maxRequestBytes = 4 << 20
+	r.Body = http.MaxBytesReader(w, r.Body, maxRequestBytes)
+	defer r.Body.Close()
+
+	var request OMMImportRequest
+	decoder := json.NewDecoder(r.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		var maxBytesError *http.MaxBytesError
+		if errors.As(err, &maxBytesError) {
+			writeError(w, http.StatusRequestEntityTooLarge, "request_too_large", "OMM import request exceeds the 4 MiB limit", nil)
+			return
+		}
+		writeError(w, http.StatusBadRequest, "invalid_omm_request", "request body must be valid OMM import JSON", map[string]any{"reason": err.Error()})
+		return
+	}
+	var extra any
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		var maxBytesError *http.MaxBytesError
+		if errors.As(err, &maxBytesError) {
+			writeError(w, http.StatusRequestEntityTooLarge, "request_too_large", "OMM import request exceeds the 4 MiB limit", nil)
+			return
+		}
+		writeError(w, http.StatusBadRequest, "invalid_omm_request", "request body must contain one JSON value", nil)
+		return
+	}
+
+	retrievedAt, err := parseUTC(request.Source.RetrievedAtUTC)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_source_metadata", "source.retrievedAtUtc must be RFC3339 UTC ending in Z", nil)
+		return
+	}
+	maxDurationSeconds := int64(time.Duration(1<<63-1) / time.Second)
+	if request.MaxEpochAgeSeconds <= 0 || request.MaxEpochAgeSeconds > maxDurationSeconds {
+		writeError(w, http.StatusBadRequest, "invalid_epoch_age", "maxEpochAgeSeconds must be positive and fit in a duration", nil)
+		return
+	}
+
+	source := orbit.CatalogSource{
+		Name:           request.Source.Name,
+		URL:            request.Source.URL,
+		SnapshotID:     request.Source.SnapshotID,
+		RetrievedAtUTC: retrievedAt,
+	}
+	records, err := orbit.ReadOMMCatalog(
+		bytes.NewReader(request.Records),
+		source,
+		time.Duration(request.MaxEpochAgeSeconds)*time.Second,
+	)
+	if err != nil {
+		writeError(w, http.StatusUnprocessableEntity, "invalid_omm_catalog", "OMM catalog failed validation", map[string]any{"reason": err.Error()})
+		return
+	}
+	if err := a.registerOMMSnapshot(source, records); err != nil {
+		writeError(w, http.StatusConflict, "snapshot_id_conflict", "snapshot ID is already registered with different contents", map[string]any{"reason": err.Error()})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, OMMImportResponse{
+		SnapshotID: source.SnapshotID,
+		Source:     source,
+		Records:    records,
+		Caveats: []string{
+			"Validated records are retained in a bounded in-memory snapshot cache for screening; they are cleared on API restart and are not merged into /api/catalog or fixture encounter routes.",
+			"Propagation support indicates compatibility with the selected near-Earth SGP4 adapter, not accuracy or collision risk.",
+			"Mean-motion derivative interpretation follows the selected SGP4 dependency and must be checked against the source convention.",
+		},
+	})
 }
 
 func (a *API) listCatalog(w http.ResponseWriter, r *http.Request) {
@@ -459,17 +593,17 @@ func (a *API) trajectory(encounter EncounterSummary, query url.Values, maneuverM
 			maneuverVelocity = maneuverMPS
 		}
 		objectA := ObjectState{
-			PositionXKM: 6878 + maneuverMPS*maneuverElapsed/1000,
-			PositionYKM: 7.6 * secondsFromTCA,
-			PositionZKM: 0,
+			PositionXKM:  6878 + maneuverMPS*maneuverElapsed/1000,
+			PositionYKM:  7.6 * secondsFromTCA,
+			PositionZKM:  0,
 			VelocityXMPS: maneuverVelocity,
 			VelocityYMPS: 7600,
 			VelocityZMPS: 0,
 		}
 		objectB := ObjectState{
-			PositionXKM: 6878 + encounter.MinimumSeparationM/1000,
-			PositionYKM: 7.6 * secondsFromTCA,
-			PositionZKM: encounter.RelativeSpeedMPS * secondsFromTCA / 1000,
+			PositionXKM:  6878 + encounter.MinimumSeparationM/1000,
+			PositionYKM:  7.6 * secondsFromTCA,
+			PositionZKM:  encounter.RelativeSpeedMPS * secondsFromTCA / 1000,
 			VelocityXMPS: 0,
 			VelocityYMPS: 7600,
 			VelocityZMPS: encounter.RelativeSpeedMPS,
@@ -534,18 +668,18 @@ func (a *API) maneuver(w http.ResponseWriter, r *http.Request, encounter Encount
 	}
 	simulatedMetrics := closestMetrics(simulated.Samples, encounter.RelativeSpeedMPS, deltaV)
 	result := ManeuverResult{
-		ScenarioID: scenarioID(encounter.EncounterID, request.ManeuverTimeUTC, deltaV),
-		EncounterID: encounter.EncounterID,
-		ManeuverTimeUTC: request.ManeuverTimeUTC,
+		ScenarioID:          scenarioID(encounter.EncounterID, request.ManeuverTimeUTC, deltaV),
+		EncounterID:         encounter.EncounterID,
+		ManeuverTimeUTC:     request.ManeuverTimeUTC,
 		AlongTrackDeltaVMPS: deltaV,
 		OriginalMetrics: ManeuverMetrics{
-			TCAUTC: encounter.TCAUTC,
+			TCAUTC:                  encounter.TCAUTC,
 			MinimumSeparationMeters: encounter.MinimumSeparationM,
-			RelativeSpeedMPS: encounter.RelativeSpeedMPS,
+			RelativeSpeedMPS:        encounter.RelativeSpeedMPS,
 		},
-		SimulatedMetrics: simulatedMetrics,
-		MissDistanceDeltaM: simulatedMetrics.MinimumSeparationMeters - encounter.MinimumSeparationM,
-		OriginalTrajectory: original,
+		SimulatedMetrics:    simulatedMetrics,
+		MissDistanceDeltaM:  simulatedMetrics.MinimumSeparationMeters - encounter.MinimumSeparationM,
+		OriginalTrajectory:  original,
 		SimulatedTrajectory: simulated,
 		Limitations: []string{
 			"This deterministic synthetic demo applies a constant linear position offset after an instantaneous velocity change; it is not orbital dynamics.",
@@ -610,6 +744,9 @@ func decodeBody(r *http.Request, target any) error {
 	}
 	var extra any
 	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		if err != nil {
+			return err
+		}
 		return errors.New("request body must contain one JSON value")
 	}
 	return nil

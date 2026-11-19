@@ -2,6 +2,7 @@ import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 import { CameraRig } from './CameraRig';
+import CollisionBurst from './CollisionBurst';
 import { Earth } from './Earth';
 import { EncounterMarker } from './EncounterMarker';
 import { OrbitTracks } from './OrbitTracks';
@@ -51,6 +52,7 @@ function getCurrentPositionScene(
 
 export function OrbitalScene({
   mode,
+  collisionProgress,
   sceneTimeUtc,
   selected,
   satellites,
@@ -71,21 +73,8 @@ export function OrbitalScene({
     ])),
     [paths, satellites, sceneTimeUtc],
   );
-  const focusPositions = useMemo(() => {
-    const focuses = new Map(positionsScene);
-    if (encounter) {
-      const first = positionsScene.get(encounter.objectAId);
-      const second = positionsScene.get(encounter.objectBId);
-      if (first && second) {
-        focuses.set(encounter.id, [
-          (first[0] + second[0]) / 2,
-          (first[1] + second[1]) / 2,
-          (first[2] + second[2]) / 2,
-        ]);
-      }
-    }
-    return focuses;
-  }, [encounter, positionsScene]);
+  const collisionDemo = collisionProgress !== undefined;
+  const collisionOccurred = collisionDemo && collisionProgress >= 0;
   const encounterPosition = useMemo(() => {
     if (!encounter) return undefined;
     const firstSatellite = satellites.find((satellite) => satellite.id === encounter.objectAId);
@@ -99,6 +88,23 @@ export function OrbitalScene({
       (first[2] + second[2]) / 2,
     ).toArray() as [number, number, number];
   }, [encounter, paths, satellites]);
+  const focusPositions = useMemo(() => {
+    const focuses = new Map(positionsScene);
+    if (encounter && encounterPosition && collisionDemo) {
+      focuses.set(encounter.id, encounterPosition);
+    } else if (encounter) {
+      const first = positionsScene.get(encounter.objectAId);
+      const second = positionsScene.get(encounter.objectBId);
+      if (first && second) {
+        focuses.set(encounter.id, [
+          (first[0] + second[0]) / 2,
+          (first[1] + second[1]) / 2,
+          (first[2] + second[2]) / 2,
+        ]);
+      }
+    }
+    return focuses;
+  }, [collisionDemo, encounter, encounterPosition, positionsScene]);
   const encounterSatelliteIds = useMemo(
     () => new Set(encounter ? [encounter.objectAId, encounter.objectBId] : []),
     [encounter],
@@ -116,20 +122,32 @@ export function OrbitalScene({
       onPointerLeave={() => setInteractionPaused(false)}
     >
       <Canvas
+        shadows
         camera={{ position: [8, 6, 9], fov: 36, near: 0.1, far: 100 }}
-        dpr={[1, 1.75]}
+        dpr={[1, 1.5]}
         onPointerMissed={() => onSelect(null)}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
       >
         <color attach="background" args={[palette === 'dark' ? '#151f29' : '#f7f6f2']} />
-        <ambientLight intensity={palette === 'dark' ? 1.05 : 1.3} />
-        <directionalLight position={[7, 8, 6]} intensity={palette === 'dark' ? 1.3 : 1.7} />
-        <directionalLight position={[-5, -2, -4]} intensity={0.45} color="#c7d9e3" />
+        <ambientLight intensity={palette === 'dark' ? 0.9 : 1.05} />
+        <directionalLight
+          castShadow
+          position={[7, 8, 6]}
+          intensity={palette === 'dark' ? 1.5 : 1.7}
+          shadow-mapSize={[1024, 1024]}
+          shadow-camera-near={0.1}
+          shadow-camera-far={30}
+          shadow-camera-left={-6}
+          shadow-camera-right={6}
+          shadow-camera-top={6}
+          shadow-camera-bottom={-6}
+        />
+        <directionalLight position={[-5, -2, -4]} intensity={0.35} color="#c7d9e3" />
 
         <Suspense fallback={null}>
           <Earth palette={palette} reducedMotion={reducedMotion} paused={interactionPaused} />
           <OrbitTracks paths={paths} selected={selected} encounter={encounter} palette={palette} />
-          {satellites.map((satellite) => {
+          {satellites.filter(({ id }) => !collisionOccurred || !encounterSatelliteIds.has(id)).map((satellite) => {
             const position = positionsScene.get(satellite.id) ?? toScenePosition(
               satellite.positionKm ?? fixturePositionKm(satellite.id, satellite.altitudeKm),
             );
@@ -144,17 +162,24 @@ export function OrbitalScene({
                 selected={selectedSatelliteId === satellite.id}
                 dimmed={dimmed}
                 palette={palette}
+                reducedMotion={reducedMotion}
+                paused={interactionPaused}
                 onSelect={onSelect}
               />
             );
           })}
-          {encounter && encounterPosition && (
+          {collisionProgress === undefined && encounter && encounterPosition && (
             <EncounterMarker
               position={encounterPosition}
               encounterId={encounter.id}
               selected={selectedEncounterId === encounter.id}
+              reducedMotion={reducedMotion}
+              paused={interactionPaused}
               onSelect={onSelect}
             />
+          )}
+          {collisionProgress !== undefined && collisionProgress >= 0 && collisionProgress < 1 && encounterPosition && (
+            <CollisionBurst position={encounterPosition} progress={collisionProgress} reducedMotion={reducedMotion} />
           )}
         </Suspense>
         <CameraRig

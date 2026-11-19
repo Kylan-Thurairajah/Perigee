@@ -70,10 +70,10 @@ At 1440x900, 1280x800, and 1920x1080, the desktop layouts must remain legible an
 
 ## 3D Direction
 
-- Build a lightly voxelized Earth with stylized procedural geometry.
-- Use reusable block or low-poly satellite geometry.
-- Keep orbit paths legible, with an understated idle rotation.
-- Slow or stop globe motion during direct interaction.
+- Build a voxel-forward Earth with readable block-sized ocean, land, ice, and cloud details. Keep continents recognizable without realistic surface textures.
+- Use a distinct satellite silhouette with a central bus and segmented blue solar arrays, oriented radially so arrays clear the globe. Give rendered orbit paths a small visual clearance from voxel protrusions; this is a display adjustment only and does not change fixture positions or analysis values.
+- Keep orbit paths legible, with a slow globe rotation, restrained atmosphere pulse, subtle satellite attitude changes, and a breathing encounter marker.
+- Pause ambient scene motion during direct interaction.
 - Use a clean outline or halo for selection rather than glowing rings.
 - Frame encounter pairs on selection and let the rest of the scene recede subtly.
 - Respect `prefers-reduced-motion`.

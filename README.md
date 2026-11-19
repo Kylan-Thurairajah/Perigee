@@ -1,12 +1,30 @@
 # Perigee
 
-### A clearer view of what's happening in orbit.
-
-Perigee is a local-first orbital traffic visualization and conjunction-screening portfolio app. It combines a voxel Earth interface with deterministic synthetic fixtures and a Go API.
+Orbit tracks can cross on a map even when the objects pass through hours apart. Perigee uses time-stamped orbital data to find close passes, then puts the pair and its separation chart on the same 3D replay timeline.
 
 ## Demo
 
 ![Nine-second Perigee demo showing a fictional impact, synchronized 3D replay, and a completed what-if separation comparison](media/perigee-demo.gif)
+
+## Read a close approach
+
+- **Closest approach · 19:11 UTC** — the moment the modeled positions come nearest during the screening window.
+- **Miss distance · 5,202 m** — the gap between those positions at closest approach. A screening threshold decides which passes appear in the results.
+- **Relative speed · 2.1 m/s** — the speed of one object relative to the other at that moment. Two satellites can be moving quickly around Earth while moving slowly relative to each other.
+
+Actual contact depends on whether the spacecraft overlap. Estimating collision probability also requires knowing how uncertain their positions are.
+
+### Try a small velocity change
+
+In this replay, a hypothetical **+0.5 m/s** change raises the smallest sampled separation from **5,201.6 m** to **5,259.6 m**. Scrub the scene to see where the two curves diverge. The comparison uses a short-window two-body approximation.
+
+![Computed Vanguard verification replay beside its separation chart. The dashed what-if curve sits above the baseline near closest approach.](media/encounter-what-if.jpg)
+
+### See the moment of impact
+
+The separate fictional replay brings two scripted tracks together at **0 m**. The camera frames the meeting point and the burst plays at that instant.
+
+![Fictional Peregrine and Lyra collision with the impact burst centered on the globe and zero separation in the encounter panel](media/fictional-impact.jpg)
 
 ## Run locally
 
@@ -67,4 +85,4 @@ go test ./...
 
 ## Current data and limits
 
-The screening demo uses a historical verification record and a synthetic variant. The standalone Encounter tab includes a separate fictional collision clip, and the standalone Maneuver Lab uses a linearized fixture preview. [Screening measurements and reference comparison](docs/BENCHMARKS.md)
+The computed example pairs a historical verification record with a synthetic variant. [Screening measurements and reference comparison](docs/BENCHMARKS.md)

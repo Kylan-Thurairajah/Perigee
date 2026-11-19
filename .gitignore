@@ -22,5 +22,7 @@ Desktop.ini
 /.perigee-inline.py
 /media/_drafts/
 
-# Local planning prompt; retain locally but do not publish.
+# Local project notes and agent instructions
+/AGENTS.md
+/docs/
 /PERIGEE_CODEX_MASTER_PLAN.md

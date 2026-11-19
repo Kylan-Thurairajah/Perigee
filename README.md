@@ -4,7 +4,7 @@ Orbit tracks can cross on a map even when the objects pass through hours apart. 
 
 ## Demo
 
-![Dark-mode replay of the fictional Peregrine A × Lyra B encounter at 2× speed, from approach through impact and aftermath](media/perigee-demo.gif)
+![Dark-mode replay of Peregrine A × Lyra B approaching a 742 m miss distance, with the 3D scene and separation chart synchronized](media/perigee-demo.gif)
 
 ## Read a close approach
 
@@ -60,7 +60,9 @@ Open `http://localhost:5173` after the containers report healthy or become reach
 
 ## Screen a local OMM snapshot
 
-For a ready-to-import example, use the [two-record verification fixture](data/reference/screening-demo.omm.json) and the dates in the [computed screening walkthrough](docs/DEMO_SCRIPT.md#computed-screening-walkthrough).
+Try the [two-record verification fixture](data/reference/screening-demo.omm.json). It pairs a historical orbital record with a synthetic variant.
+
+Use **Vallado verification fixture** as the source name and **7 days** as the maximum element age. Enter the local-time equivalents of **2000-06-28 00:00 UTC** for retrieval and **2000-06-27 19:07–19:13 UTC** for the screening window. Use a **10,000 m** threshold and a **60-second** coarse step.
 
 Open **Screening**, choose an OMM JSON file, and enter its source, snapshot ID, retrieval time, and maximum element age. The API accepts a single OMM record or an array. A screening run requires 2–100 records with fresh epochs and supported near-Earth SGP4 elements. Enter the screening window in local time, the miss-distance threshold in meters, and the coarse step in seconds. The results show the closest-approach time in UTC, miss distance, relative speed, and model caveats.
 
@@ -69,20 +71,3 @@ Open **Screening**, choose an OMM JSON file, and enter its source, snapshot ID, 
 ![Completed screening run with one result, its miss distance, and the Open replay button](media/screening-results.jpg)
 
 The API keeps snapshots and jobs in bounded memory. Restarting the API clears them. Select **Open replay** on a result to scrub the two computed tracks and their separation chart. The TEME replay spans five minutes either side of the reported closest approach and may extend beyond the screening window. In the replay, **Preview what-if** compares sampled separation after a small hypothetical velocity change at the replay start. The preview uses an educational two-body approximation. The standalone Encounter and Maneuver Lab tabs use synthetic fixtures.
-
-## Verify
-
-```powershell
-Set-Location apps/web
-npm run typecheck
-npm run lint
-npm run test
-npm run build
-
-Set-Location ../api
-go test ./...
-```
-
-## Current data and limits
-
-The computed example pairs a historical verification record with a synthetic variant. [Screening measurements and reference comparison](docs/BENCHMARKS.md)

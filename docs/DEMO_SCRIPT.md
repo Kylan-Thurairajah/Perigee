@@ -1,6 +1,6 @@
 # Perigee Video Demo
 
-The [README demo](../media/perigee-demo.mp4) opens with a fictional impact replay. Its camera looks at the impact from the outward side of Earth. The computed screening walkthrough follows, using the local Compose API and the packaged OMM fixture. The replay and chart are arranged side by side in the recording, and the clip holds on the completed what-if comparison.
+The [README demo](../media/perigee-demo.gif) is an 8.7-second animation. It opens on the loaded fictional collision replay, cuts to the loaded screening replay, and holds on the completed what-if comparison. The collision camera faces the impact from the outward side of Earth. The computed frames use the local Compose API and the packaged OMM fixture.
 
 ## Before recording
 
@@ -23,8 +23,8 @@ The [README demo](../media/perigee-demo.mp4) opens with a fictional impact repla
 
 - For a short impact clip, open **Encounter** and select **Play fictional collision**. At 1× the scripted hit occurs four seconds into an eight-second loop. Use **Pause** to hold the burst or **Restart collision replay** to return to the approach. The fictional impact and fragments are illustrative effects.
 
-- For the README cut, capture the burst in the fictional replay, then start the computed portion with the input form filled in. Hold on the what-if overlay and minimum separations after the response arrives.
-- The README uses an MP4 and clickable JPEG poster in `media/`.
+- For the README cut, capture the burst in the fictional replay and start the computed portion after the WebGL replay has loaded. Hold on the what-if overlay and minimum separations after the response arrives.
+- The README embeds the animated GIF directly and shows upload and screening-result screenshots in the setup section.
 
 ## Verified demo boundary
 

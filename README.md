@@ -6,9 +6,7 @@ Perigee is a local-first orbital traffic visualization and conjunction-screening
 
 ## Demo
 
-[![Play the Perigee demo showing a computed encounter in 3D and a what-if separation chart](media/perigee-demo.jpg)](media/perigee-demo.mp4)
-
-[Watch the demo (MP4)](media/perigee-demo.mp4) · See a fictional impact, then follow OMM import, computed 3D replay, and the completed what-if comparison.
+![Nine-second Perigee demo showing a fictional impact, synchronized 3D replay, and a completed what-if separation comparison](media/perigee-demo.gif)
 
 ## Run locally
 
@@ -47,6 +45,10 @@ Open `http://localhost:5173` after the containers report healthy or become reach
 For a ready-to-import example, use the [two-record verification fixture](data/reference/screening-demo.omm.json) and the dates in the [computed screening walkthrough](docs/DEMO_SCRIPT.md#computed-screening-walkthrough).
 
 Open **Screening**, choose an OMM JSON file, and enter its source, snapshot ID, retrieval time, and maximum element age. The API accepts a single OMM record or an array. A screening run requires 2–100 records with fresh epochs and supported near-Earth SGP4 elements. Enter the screening window in local time, the miss-distance threshold in meters, and the coarse step in seconds. The results show the closest-approach time in UTC, miss distance, relative speed, and model caveats.
+
+![Screening form with the example OMM file selected and its source and retrieval time filled in](media/screening-upload.jpg)
+
+![Completed screening run with one result, its miss distance, and the Open replay button](media/screening-results.jpg)
 
 The API keeps snapshots and jobs in bounded memory. Restarting the API clears them. Select **Open replay** on a result to scrub the two computed tracks and their separation chart. The TEME replay spans five minutes either side of the reported closest approach and may extend beyond the screening window. In the replay, **Preview what-if** compares sampled separation after a small hypothetical velocity change at the replay start. The preview uses an educational two-body approximation. The standalone Encounter and Maneuver Lab tabs use synthetic fixtures.
 

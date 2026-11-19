@@ -53,6 +53,7 @@ May make only small documented fixes in owner code. Capture media only from a fu
 
 ## Change Rules
 
+- Never add `Co-authored-by` trailers or other agent co-author attribution to commits. Verify the commit message before pushing.
 - Make small, reviewable, testable changes.
 - Preserve existing useful code instead of rewriting it to match the plan.
 - Use the existing package manager and build system once they exist.

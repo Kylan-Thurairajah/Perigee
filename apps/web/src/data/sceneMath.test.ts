@@ -4,6 +4,7 @@ import {
   EARTH_RADIUS_SCENE,
   ORBIT_VISUAL_CLEARANCE_SCENE,
   fixturePositionKm,
+  impactCameraPosition,
   interpolatePathPosition,
   toScenePosition,
 } from '../scene/sceneMath';
@@ -15,6 +16,14 @@ const points: OrbitPathPoint[] = [
 ];
 
 describe('sceneMath', () => {
+  it('places the impact camera outside the event even on the far side of Earth', () => {
+    for (const impact of [[-2.2, 0, 0], [0, 0, -2.3], [0, -2.4, 0]] as const) {
+      const camera = impactCameraPosition(impact, 7.6);
+      const midpoint = camera.map((coordinate, index) => (coordinate + impact[index]) / 2);
+      expect(Math.hypot(...midpoint)).toBeGreaterThan(Math.hypot(...impact));
+      expect(Math.hypot(...camera.map((coordinate, index) => coordinate - impact[index]))).toBeCloseTo(7.6);
+    }
+  });
   it('interpolates synchronized path samples at the requested UTC time', () => {
     expect(interpolatePathPosition(points, '2026-03-20T12:30:00Z')).toEqual([3500, 3500, 0]);
   });

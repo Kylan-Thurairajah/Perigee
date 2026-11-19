@@ -1,6 +1,6 @@
 # Perigee Video Demo
 
-**Status:** walkthrough is ready; video/GIF capture is still pending.
+The [README demo](../media/perigee-demo.mp4) opens with a fictional impact replay. Its camera looks at the impact from the outward side of Earth. The computed screening walkthrough follows, using the local Compose API and the packaged OMM fixture. The replay and chart are arranged side by side in the recording, and the clip holds on the completed what-if comparison.
 
 ## Before recording
 
@@ -9,7 +9,7 @@
 3. Use light theme, select Explorer, and reset the Maneuver Lab if a previous preview is active.
 4. Record the browser content without showing credentials, unrelated windows, or unsupported benchmark claims.
 
-## 45-second walkthrough
+## Optional fixture walkthrough
 
 | Time | Action | Narration / on-screen point |
 |---|---|---|
@@ -23,11 +23,8 @@
 
 - For a short impact clip, open **Encounter** and select **Play fictional collision**. At 1× the scripted hit occurs four seconds into an eight-second loop. Use **Pause** to hold the burst or **Restart collision replay** to return to the approach. The fictional impact and fragments are illustrative effects.
 
-- Keep the recording between 35 and 60 seconds; use a steady cursor and pause briefly after each transition.
-- Capture at 1080p or higher with browser chrome hidden if practical. Use a screen recorder available on your machine; no recorder appeared in the apps available to this session. Export the video before making any GIF.
-- A short silent loop may be cut from the Explorer-to-Encounter transition after reviewing the full video.
-- Intended media locations, once files have actually been captured and reviewed: `media/perigee-demo.mp4` and `media/perigee-preview.gif`.
-- Do not add a placeholder video, synthetic terminal benchmark, or unverified performance statistic.
+- For the README cut, capture the burst in the fictional replay, then start the computed portion with the input form filled in. Hold on the what-if overlay and minimum separations after the response arrives.
+- The README uses an MP4 and clickable JPEG poster in `media/`.
 
 ## Verified demo boundary
 

@@ -4,6 +4,12 @@
 
 Perigee is a local-first orbital traffic visualization and conjunction-screening portfolio app. It combines a voxel Earth interface with deterministic synthetic fixtures and a Go API.
 
+## Demo
+
+[![Play the Perigee demo showing a computed encounter in 3D and a what-if separation chart](media/perigee-demo.jpg)](media/perigee-demo.mp4)
+
+[Watch the demo (MP4)](media/perigee-demo.mp4) · See a fictional impact, then follow OMM import, computed 3D replay, and the completed what-if comparison.
+
 ## Run locally
 
 Requirements:
@@ -57,14 +63,6 @@ Set-Location ../api
 go test ./...
 ```
 
-## Video demo
-
-The fixture-backed walkthrough and recording checklist are in [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md). The actual video and GIF have not been captured yet.
-
-Open **Encounter → Play fictional collision** to watch a scripted impact with a short WebGL burst. Use the replay scrubber or switch between 0.5×, 1×, and 2×. The screen also offers the original featured close approach.
-
-Reproducible screening measurements are in [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
-
 ## Current data and limits
 
-The demo uses clearly labeled synthetic fixtures. It does not represent operational ephemerides, real conjunction predictions, or collision probability. Encounter replay uses simplified circular fixture tracks. The Maneuver Lab applies a linearized offset to those samples; it is not physical orbit propagation or operational guidance.
+The screening demo uses a historical verification record and a synthetic variant. The standalone Encounter tab includes a separate fictional collision clip, and the standalone Maneuver Lab uses a linearized fixture preview. [Screening measurements and reference comparison](docs/BENCHMARKS.md)

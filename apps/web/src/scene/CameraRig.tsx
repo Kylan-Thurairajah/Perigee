@@ -3,6 +3,7 @@ import type { ComponentRef } from 'react';
 import { OrbitControls } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
+import { impactCameraPosition } from './sceneMath';
 import type { SceneMode, SceneSelection } from './types';
 
 const FOCUSED_CAMERA_DISTANCE = 7.6;
@@ -12,9 +13,11 @@ interface CameraRigProps {
   selected: SceneSelection;
   focusPositions: ReadonlyMap<string, [number, number, number]>;
   reducedMotion: boolean;
+  impactPosition?: [number, number, number];
+  impactActive?: boolean;
 }
 
-export function CameraRig({ mode, selected, focusPositions, reducedMotion }: CameraRigProps) {
+export function CameraRig({ mode, selected, focusPositions, reducedMotion, impactPosition, impactActive }: CameraRigProps) {
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null);
   const { camera } = useThree();
   const focusKey = selected ? `${selected.kind}:${selected.id}` : 'overview';
@@ -32,6 +35,18 @@ export function CameraRig({ mode, selected, focusPositions, reducedMotion }: Cam
   );
 
   useEffect(() => {
+    if (impactPosition) {
+      // Approach the event from outside its local horizon, even after manual orbiting.
+      desiredTarget.current.set(...impactPosition);
+      desiredPosition.current.set(...impactCameraPosition(impactPosition, FOCUSED_CAMERA_DISTANCE));
+      camera.position.copy(desiredPosition.current);
+      camera.lookAt(desiredTarget.current);
+      controls.current?.target.copy(desiredTarget.current);
+      controls.current?.update();
+      moving.current = false;
+      following.current = false;
+      return;
+    }
     const currentSelection = selectedRef.current;
     const focus = currentSelection ? focusPositionsRef.current.get(currentSelection.id) : undefined;
     desiredTarget.current.set(...(focus ?? [0, 0, 0]));
@@ -45,7 +60,7 @@ export function CameraRig({ mode, selected, focusPositions, reducedMotion }: Cam
       camera.lookAt(desiredTarget.current);
       if (controls.current) controls.current.target.copy(desiredTarget.current);
     }
-  }, [camera, focusKey, mode, reducedMotion, targetOffset]);
+  }, [camera, focusKey, impactActive, impactPosition, mode, reducedMotion, targetOffset]);
 
   useFrame((_, delta) => {
     if ((!moving.current && !following.current) || !controls.current) return;

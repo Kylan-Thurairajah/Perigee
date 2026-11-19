@@ -3,6 +3,13 @@ import type { OrbitPathPoint, PositionKm } from './types';
 export const EARTH_RADIUS_KM = 6371;
 export const EARTH_RADIUS_SCENE = 2;
 export const KM_TO_SCENE = EARTH_RADIUS_SCENE / EARTH_RADIUS_KM;
+
+export function impactCameraPosition(impact: PositionKm, distance: number): [number, number, number] {
+  const radius = Math.hypot(...impact);
+  if (radius === 0) return [0, 0, distance];
+  const scale = 1 + distance / radius;
+  return [impact[0] * scale, impact[1] * scale, impact[2] * scale];
+}
 export const ORBIT_VISUAL_CLEARANCE_SCENE = 0.13;
 
 export function toScenePosition(positionKm: PositionKm): [number, number, number] {

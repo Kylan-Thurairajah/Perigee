@@ -6,7 +6,7 @@ This is the lead/integrator handoff for current repository state. Update it when
 
 - Updated: 2026-11-18
 - Phase: M8 screening. The Screening tab imports local OMM JSON, submits an asynchronous job, polls status, and pages through computed encounters with a propagated replay and an educational what-if. Encounter also offers a fictional collision clip. The screening benchmark baseline is in `docs/BENCHMARKS.md`.
-- M4 script/capture documentation is ready; no video or GIF has been recorded yet. The available browser tools support inspection and screenshots, but not video recording, so capture remains a manual follow-up.
+- The README opens with a captioned recording of the core computed screening workflow. The MP4 and poster are in `media/`.
 - This worktree had no commit history before this initial baseline was staged.
 
 ## Verified and completed
@@ -42,7 +42,7 @@ This is the lead/integrator handoff for current repository state. Update it when
 - M6 adds `ReadTLECatalog` to parse named or unnamed local TLE catalogs. It requires source/snapshot/retrieval metadata and an explicit max-age policy, rejects malformed/checksum-invalid, duplicate, and future-epoch records, marks old epochs stale, and reports unsupported propagation models without treating their positions as valid.
 - M7 adds `ReadOMMCatalog` for single-object or array CCSDS-style JSON OMM input and `POST /api/catalog/omm` for bounded, provenance-aware validation. It preserves raw OMM fields, rejects malformed required elements, duplicate NORAD IDs, and future epochs, and flags stale records plus incomplete/unsupported propagation fields. The SGP4 OMM adapter matches the existing Vallado epoch reference vector. Imported data are returned for inspection only, not persisted or used by fixture catalog, screening, or encounter routes.
 - Backend checks pass after M7: `go test ./... -count=1` and `go vet ./...` from `apps/api`; OpenAPI YAML parses successfully. `docker compose up --build -d api` passes, and a live POST to `/api/catalog/omm` returns a supported Vallado OMM record with an unknown source field preserved while `/api/health` remains `ok`.
-- Added `docs/DEMO_SCRIPT.md` with a 45-second outline, safe narration, recording setup, and capture checklist; `README.md` links to it and accurately states that media is pending.
+- Added `docs/DEMO_SCRIPT.md` with the fixture and computed screening walkthroughs.
 - Browser smoke check traversed Explorer → featured encounter → playback/pause → Maneuver Lab preview at 1920×1080; it verified the changed fixture path, what-if chart/metric, visible caveat, and no console/page errors.
 - Current UI polish makes the globe surface itself voxel-forward (land, sea, cloud, and polar ice blocks), adds a softly breathing atmosphere, and gives spacecraft attitude and the encounter marker restrained motion. Scene motion pauses during interaction and honors `prefers-reduced-motion`.
 - The latest spacecraft pass aligns each model's radial axis away from Earth, makes its central bus, antenna, and segmented blue solar arrays more legible, and adds 0.13 scene units of render-only radial clearance to orbit paths and their displayed positions. Fixture positions, chart measurements, and analysis values remain unchanged. The updated Compose web app loads at `http://localhost:5173`, and API health remains `ok`.
@@ -51,9 +51,7 @@ This is the lead/integrator handoff for current repository state. Update it when
 
 ## Immediate next steps
 
-1. Keep the M4 recording pending until a screen recorder is available; follow `docs/DEMO_SCRIPT.md`.
-2. Record a complete browser walkthrough of the computed workflow alongside the fixture demo.
-3. Broaden the synthetic reference comparison with more varied orbit geometries and an independent verification source.
+1. Broaden the synthetic reference comparison with more varied orbit geometries and an independent verification source.
 
 ## Milestones
 
@@ -92,12 +90,11 @@ Status: complete for the bounded fixture-backed visual preview; no real maneuver
 
 ### M4: Video-demo finish
 
-Status: walkthrough and recording instructions ready; actual capture remains.
+Status: the README now includes the computed workflow recording. A separate fixture walkthrough and GIF remain optional.
 
 - Run the opening, encounter replay, and what-if flow end-to-end.
-- Add concise demo and capture instructions, then record and review the 35–60 second walkthrough/GIF.
-
-Rough estimate: one focused recording/review session remains for the fixture-backed video demo, assuming no visual revisions are needed. This is not a completion estimate for the full engineering MVP.
+- The 28-second README cut opens with a visibly centered fictional impact, then shows OMM import, computed results, synchronized replay, and the backend what-if. It holds the completed comparison for about eight seconds. The capture arranges the replay and chart side by side.
+- Verified the 1440 × 900 video by decoding the impact, results, and completed what-if frames in Edge. The collision camera centers on the actual event and positions itself outward from Earth at clip entry and impact. The frontend camera geometry regression covers far-side and polar positions. All 16 web tests, lint, and the Compose web build passed.
 
 ### M5: SGP4 adapter and verification
 
@@ -129,7 +126,7 @@ Status: complete for JSON OMM validation; the bounded in-memory snapshot cache w
 
 ### M8: Screening and backend-connected analysis
 
-Status: in progress. The Screening tab connects the bounded job lifecycle to a paginated results table. Screened encounters have run-scoped detail and synchronized SGP4 replay. Screened replay also offers a bounded, backend-computed educational what-if. Demo recording and reproducible performance evidence are pending.
+Status: in progress. The Screening tab connects the bounded job lifecycle to a paginated results table, synchronized SGP4 replay, and a backend-computed educational what-if. The recorded walkthrough and bounded performance baseline are available. Broader independent reference validation remains.
 
 - `ScreenOMMCatalog` evaluates all pairs for up to 100 supported, fresh OMM records and at most 1441 time samples.
 - Coarse relative-position segments select one candidate interval per pair; a bounded golden-section search refines that minimum and reports miss distance and relative speed.
@@ -149,7 +146,7 @@ Status: in progress. The Screening tab connects the bounded job lifecycle to a p
 - Live replay verification: `docker compose up --build -d` succeeded. A headless Edge run using the two-record Vallado-derived fixture and the live Compose API imported the catalog, completed screening, opened the WebGL replay, and advanced playback without uncaught page exceptions. A direct check through the web proxy verified the TEME frame, 61 samples, matching center time and miss distance, and healthy fixture mode.
 - Screened what-if: `POST /api/screenings/{runId}/encounters/{encounterId}/what-if` accepts a signed impulse from -0.5 to 0.5 m/s. The time and target are fixed to the replay start and object A. The backend adds the position and velocity difference between two central-Earth-gravity integrations to object A's SGP4 baseline. The chart compares separations on the original 61-sample grid. The run and standalone fixture Maneuver Lab remain independent of the preview.
 - What-if verification: `go test ./... -count=3`, `go vet ./...`, OpenAPI YAML parsing, web typecheck and lint, all 11 Vitest tests, and the production build passed. The first API integration test surfaced a 405 from the top-level method guard. Screening run routes now dispatch to their own method checks, and the focused tests and full Go suite passed after that fix.
-- Live what-if verification: `docker compose up --build -d` passed. Headless Edge imported the test fixture against the live Compose API, submitted a screen, opened replay, applied the preview, checked the WebGL and chart overlays plus sampled minimums, and cleared the preview without uncaught page exceptions. The recorded video and GIF are still pending. The computed walkthrough is in `docs/DEMO_SCRIPT.md`.
+- Live what-if verification: `docker compose up --build -d` passed. Headless Edge imported the test fixture against the live Compose API, submitted a screen, opened replay, applied the preview, checked the WebGL and chart overlays plus sampled minimums, and cleared the preview without uncaught page exceptions.
 
 ## Latest development
 
@@ -162,15 +159,13 @@ Status: in progress. The Screening tab connects the bounded job lifecycle to a p
 
 ## Prioritized remaining work
 
-1. **Video demo, fast path:** record the 35–60 second demo; walkthrough and capture instructions are already present.
-2. **Finish project evidence:** end-to-end demo media and broader independent reference validation. The synthetic reference comparison shares the SGP4 adapter with the engine.
+1. **Finish independent reference validation:** the synthetic reference comparison shares the SGP4 adapter with the engine.
 
 ## Active blockers and constraints
 
 - The current SGP4 dependency supports selected near-Earth TLE/OMM elements; deep-space SDP4 remains unsupported.
 - The Maneuver Lab is still a linearized fixture preview, not propagation; keep that limitation visible and do not call it a maneuver recommendation.
 - No current Docker blocker: Compose build and smoke checks pass. The npm build reports dependency audit findings and a bundle-size advisory; neither prevented the build.
-- Video capture is still pending: no screen recorder appeared in the apps currently available through Computer Use.
 - Do not claim aspirational performance/recall numbers without reproducible measurements.
 - A minimum separation is miss distance, not collision probability.
 - Do not present maneuvers as operational guidance or guaranteed collision avoidance.

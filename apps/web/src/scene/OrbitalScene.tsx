@@ -187,6 +187,8 @@ export function OrbitalScene({
           selected={selected}
           focusPositions={focusPositions}
           reducedMotion={reducedMotion}
+          impactPosition={collisionDemo ? encounterPosition : undefined}
+          impactActive={collisionOccurred}
         />
       </Canvas>
     </div>

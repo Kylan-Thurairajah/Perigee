@@ -4,7 +4,7 @@ Orbit tracks can cross on a map even when the objects pass through hours apart. 
 
 ## Demo
 
-![Nine-second Perigee demo showing a fictional impact, synchronized 3D replay, and a completed what-if separation comparison](media/perigee-demo.gif)
+![Dark-mode replay of the fictional Peregrine A × Lyra B encounter at 2× speed, from approach through impact and aftermath](media/perigee-demo.gif)
 
 ## Read a close approach
 

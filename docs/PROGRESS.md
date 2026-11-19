@@ -6,7 +6,7 @@ This is the lead/integrator handoff for current repository state. Update it when
 
 - Updated: 2026-11-18
 - Phase: M8 screening. The Screening tab imports local OMM JSON, submits an asynchronous job, polls status, and pages through computed encounters with a propagated replay and an educational what-if. Encounter also offers a fictional collision clip. The screening benchmark baseline is in `docs/BENCHMARKS.md`.
-- The README opens with a short inline animation of the fictional impact, computed replay, and completed what-if. The screenshots below the demo cover OMM setup and screening results.
+- The README opens with the dark-mode fictional Peregrine A × Lyra B replay at 2×. The dark-mode stills show the impact, computed what-if, OMM setup, and screening results.
 - This worktree had no commit history before this initial baseline was staged.
 
 ## Verified and completed
@@ -93,7 +93,7 @@ Status: complete for the bounded fixture-backed visual preview; no real maneuver
 Status: the README now includes the computed workflow recording. A separate fixture walkthrough and GIF remain optional.
 
 - Run the opening, encounter replay, and what-if flow end-to-end.
-- The inline README cut is 8.71 seconds at 1080 × 570. The first frame shows the loaded collision approach. The completed what-if comparison holds for 2.75 seconds. The 70-frame GIF is 1.87 MB. Upload and screening results are separate screenshots.
+- The inline README cut runs for four seconds from the loaded approach through impact and aftermath. It shows the fictional Peregrine A × Lyra B replay at 2×. The computed workflow is shown in separate stills.
 - The collision camera centers on the actual event and positions itself outward from Earth at clip entry and impact. The frontend camera geometry regression covers far-side and polar positions. All 16 web tests, lint, and the Compose web build passed for that change.
 
 ### M5: SGP4 adapter and verification
